@@ -23,6 +23,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Handler;
@@ -34,6 +37,7 @@ import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
+import android.text.style.ReplacementSpan;
 import android.util.Log;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
@@ -76,6 +80,12 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     private static final String TAG = SecureKeyboard.class.getSimpleName();
     /** A secure session hidden for this long ends: draft and unlocked keys are wiped. */
     private static final long SESSION_TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(5);
+    /** Same rhythm as the cursor of a text field. */
+    private static final long CARET_BLINK_MILLIS = 500;
+    /** Word joiner: invisible and keeps the caret on the line of the last word. */
+    private static final char CARET_PLACEHOLDER = '\u2060';
+    /** The hint is the text color at this opacity, so it never looks like typed text. */
+    private static final int HINT_ALPHA_PERCENT = 55;
     private static final int MAX_DRAFT_CHARS = CifraCrypto.MAX_PLAINTEXT_BYTES / 4;
 
     /** Lets screen readers into secure mode. Off by default. */
@@ -145,6 +155,7 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     private final ClipboardManager mClipboard;
     private final Handler mHandler = new Handler(Looper.getMainLooper());
     private final Runnable mEndSessionRunnable = this::endSession;
+    private final Runnable mBlinkRunnable = this::blinkCaret;
     private final BroadcastReceiver mScreenOffReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(final Context context, final Intent intent) {
@@ -160,6 +171,7 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     private TextView mClipboardButton;
     private TextView mEncryptButton;
     private TextView mComposeText;
+    private CaretSpan mCaret;
     private View mOverlay;
     private TextView mOverlayTitle;
     private TextView mOverlaySubtitle;
@@ -273,6 +285,7 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     }
 
     public void onWindowHidden() {
+        mHandler.removeCallbacks(mBlinkRunnable);
         switch (mMode) {
             case IDLE:
             case COMPOSE:
@@ -1171,6 +1184,7 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         if (mComposeText == null) {
             return;
         }
+        mHandler.removeCallbacks(mBlinkRunnable);
         if (mMode != Mode.COMPOSE) {
             mComposeText.setText(null);
             mComposeText.setVisibility(View.GONE);
@@ -1178,18 +1192,84 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         }
         mComposeText.setVisibility(View.VISIBLE);
         mEncryptButton.setEnabled(mDraft.length() > 0);
+        final SpannableStringBuilder text = new SpannableStringBuilder(mDraft);
+        // Like a text field, the caret is solid right after each change and then blinks.
+        final int width = Math.round(2 * mIme.getResources().getDisplayMetrics().density);
+        mCaret = new CaretSpan(width, mIme.getColor(R.color.cifra_accent));
+        final int caret = text.length();
+        text.append(CARET_PLACEHOLDER);
+        text.setSpan(mCaret, caret, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         if (mDraft.length() == 0) {
-            mComposeText.setText(null);
-            mComposeText.setHint(mIme.getString(R.string.cifra_compose_hint, recipientName()));
+            final int hint = text.length();
+            text.append(mIme.getString(R.string.cifra_compose_hint, recipientName()));
+            text.setSpan(new ForegroundColorSpan(fade(mComposeText.getCurrentTextColor())), hint,
+                    text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        mComposeText.setText(text);
+        if (mDraft.length() == 0) {
+            mComposeText.scrollTo(0, 0);
+        } else {
+            mComposeText.post(this::scrollDraftToEnd);
+        }
+        mHandler.postDelayed(mBlinkRunnable, CARET_BLINK_MILLIS);
+    }
+
+    private void blinkCaret() {
+        if (mCaret == null || mComposeText == null) {
             return;
         }
-        final SpannableStringBuilder text = new SpannableStringBuilder(mDraft);
-        final int caret = text.length();
-        text.append('▏');
-        text.setSpan(new ForegroundColorSpan(mIme.getColor(R.color.cifra_accent)), caret,
-                text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        mComposeText.setText(text);
-        mComposeText.post(this::scrollDraftToEnd);
+        if (mMode != Mode.COMPOSE || !mComposeText.isShown()) {
+            // Stops solid; the next render starts blinking again.
+            mCaret.mVisible = true;
+            return;
+        }
+        mCaret.mVisible = !mCaret.mVisible;
+        mComposeText.invalidate();
+        mHandler.postDelayed(mBlinkRunnable, CARET_BLINK_MILLIS);
+    }
+
+    private static int fade(final int color) {
+        return Color.argb(Color.alpha(color) * HINT_ALPHA_PERCENT / 100, Color.red(color),
+                Color.green(color), Color.blue(color));
+    }
+
+    /**
+     * The draft's caret: a bar as tall as the text, drawn only while {@link #mVisible}. Blinking
+     * only redraws the view, so the draft is not copied again on every blink.
+     */
+    private static final class CaretSpan extends ReplacementSpan {
+        private final int mWidth;
+        private final int mColor;
+        boolean mVisible = true;
+
+        CaretSpan(final int width, final int color) {
+            mWidth = width;
+            mColor = color;
+        }
+
+        @Override
+        public int getSize(final Paint paint, final CharSequence text, final int start,
+                final int end, final Paint.FontMetricsInt fm) {
+            if (fm != null) {
+                paint.getFontMetricsInt(fm);
+            }
+            // The bar and a gap of the same width before the hint.
+            return mWidth * 2;
+        }
+
+        @Override
+        public void draw(final Canvas canvas, final CharSequence text, final int start,
+                final int end, final float x, final int top, final int y, final int bottom,
+                final Paint paint) {
+            if (!mVisible) {
+                return;
+            }
+            final Paint.FontMetricsInt metrics = paint.getFontMetricsInt();
+            final int color = paint.getColor();
+            paint.setColor(mColor);
+            canvas.drawRect(x, y + metrics.ascent, x + mWidth, y + metrics.descent, paint);
+            paint.setColor(color);
+        }
     }
 
     private void scrollDraftToEnd() {
