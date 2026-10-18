@@ -16,6 +16,7 @@
 
 package rkr.simplekeyboard.inputmethod.crypto;
 
+import android.app.KeyguardManager;
 import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
@@ -37,7 +38,11 @@ import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.ProviderException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -50,8 +55,9 @@ import javax.crypto.spec.GCMParameterSpec;
 /**
  * The key ring. Persists the {@link Vault} encrypted with a non-exportable AES-256-GCM key that
  * lives in the Android Keystore (in StrongBox when the device has one), and wraps every identity
- * secret key with a second Keystore key. Raw secret keys only exist in memory while a message is
- * being encrypted or decrypted, and are wiped right after.
+ * secret key with a second Keystore key that only works for {@link #AUTH_WINDOW_SECONDS} after
+ * the user authenticated with the screen lock or a strong biometric. Unwrapped secret keys live
+ * in memory only for one secure session.
  *
  * The BIP39 words and passphrase are never stored: they are the user's backup.
  */
@@ -61,7 +67,13 @@ public final class VaultStore {
     private static final String FILE_NAME = "cifra_vault.bin";
     private static final String ANDROID_KEYSTORE = "AndroidKeyStore";
     private static final String ALIAS_VAULT = "cifra_vault_v1";
-    private static final String ALIAS_SECRETS = "cifra_secrets_v1";
+    /** Wraps the identity secret keys; usable only right after the user authenticated. */
+    private static final String ALIAS_SECRETS = "cifra_secrets_v2";
+    /** The first secrets key, not bound to authentication. Migrated away on first unlock. */
+    private static final String ALIAS_SECRETS_V1 = "cifra_secrets_v1";
+    private static final byte WRAP_VERSION_2 = 2;
+    /** How long the secrets key stays usable after a successful authentication. */
+    public static final int AUTH_WINDOW_SECONDS = 15;
     private static final byte[] VAULT_AAD = "cifra/vault/v1".getBytes(StandardCharsets.UTF_8);
     private static final int GCM_TAG_BITS = 128;
 
@@ -90,6 +102,10 @@ public final class VaultStore {
             DEVICE_LOCKED,
             /** The Keystore key is gone or was invalidated: restore identities from the words. */
             KEY_LOST,
+            /** The secrets key needs a fresh authentication. */
+            AUTH_REQUIRED,
+            /** The device has no PIN, pattern or password, so keys cannot require one. */
+            NO_LOCK_SCREEN,
             DUPLICATE,
             FAILED,
         }
@@ -115,6 +131,47 @@ public final class VaultStore {
             mRecipient = recipient;
             mSenderContact = senderContact;
             mSenderIdentity = senderIdentity;
+        }
+    }
+
+    /** Result of encrypting with the ratchet. */
+    public static final class SendResult {
+        public final String mArmored;
+        /** The contact has not answered yet: this message relies on identity keys only. */
+        public final boolean mFirstChain;
+
+        SendResult(final String armored, final boolean firstChain) {
+            mArmored = armored;
+            mFirstChain = firstChain;
+        }
+    }
+
+    /** Result of reading a message in either format. */
+    public static final class ReadResult {
+        public enum Status { OK, NOT_MINE, ALREADY_READ, TOO_FAR }
+
+        public final Status mStatus;
+        public final DecryptResult mMessage;
+        public final boolean mRatchet;
+        /** Sent before the contact's first answer: protected by identity keys only. */
+        public final boolean mFirstChain;
+        /** Opened again within the read-again window. */
+        public final boolean mReread;
+        /** The contact started a new conversation, e.g. from a new phone. */
+        public final boolean mRestarted;
+
+        ReadResult(final Status status, final DecryptResult message, final boolean ratchet,
+                final boolean firstChain, final boolean reread, final boolean restarted) {
+            mStatus = status;
+            mMessage = message;
+            mRatchet = ratchet;
+            mFirstChain = firstChain;
+            mReread = reread;
+            mRestarted = restarted;
+        }
+
+        static ReadResult of(final Status status) {
+            return new ReadResult(status, null, false, false, false, false);
         }
     }
 
@@ -146,6 +203,11 @@ public final class VaultStore {
             final VaultException finalError = error;
             sMainHandler.post(() -> callback.onResult(finalResult, finalError));
         });
+    }
+
+    public boolean isDeviceSecure() {
+        final KeyguardManager keyguard = mContext.getSystemService(KeyguardManager.class);
+        return keyguard != null && keyguard.isDeviceSecure();
     }
 
     public boolean isStorageAvailable() {
@@ -223,8 +285,7 @@ public final class VaultStore {
             if (vault.findIdentityByPublicKey(pair.mPublicKey) != null) {
                 throw new VaultException(VaultException.Reason.DUPLICATE, null);
             }
-            final byte[] wrapped = keystoreEncrypt(ALIAS_SECRETS, pair.mSecretKey,
-                    pair.mPublicKey);
+            final byte[] wrapped = wrapSecret(pair.mSecretKey, pair.mPublicKey);
             final Vault.Identity identity = new Vault.Identity(UUID.randomUUID().toString(), name,
                     pair.mPublicKey.clone(), wrapped, System.currentTimeMillis());
             vault.addIdentity(identity);
@@ -311,6 +372,7 @@ public final class VaultStore {
             keyStore.load(null);
             keyStore.deleteEntry(ALIAS_VAULT);
             keyStore.deleteEntry(ALIAS_SECRETS);
+            keyStore.deleteEntry(ALIAS_SECRETS_V1);
         } catch (GeneralSecurityException | IOException e) {
             Log.e(TAG, "Could not delete Keystore keys", e);
         }
@@ -318,54 +380,237 @@ public final class VaultStore {
         mVault = new Vault();
     }
 
-    public String encrypt(final String plaintext, final Vault.Contact recipient,
-            final Vault.Identity sender) throws VaultException {
-        final CifraCrypto.KeyPair senderKeys = unwrap(sender);
+    /**
+     * Drops the decrypted vault (names and public keys) from memory. It is read again from disk
+     * on the next use.
+     */
+    public synchronized void clearCache() {
+        mVault = null;
+    }
+
+    /**
+     * Unwraps the secret key of every identity. The Keystore only allows it during
+     * {@link #AUTH_WINDOW_SECONDS} after the user authenticated, so call it right after
+     * {@link DeviceAuth}. Keys wrapped by the old, unbound key move to the new one here.
+     *
+     * @return the key pairs by identity id. The caller wipes them when the session ends.
+     */
+    public synchronized Map<String, CifraCrypto.KeyPair> unlockIdentities()
+            throws VaultException {
+        final Vault vault = getVault();
+        final Map<String, CifraCrypto.KeyPair> keys = new HashMap<>();
+        boolean migrated = false;
         try {
-            return CifraCrypto.armor(CifraCrypto.seal(plaintext, recipient.mPublicKey,
-                    senderKeys));
+            for (final Vault.Identity identity : new ArrayList<>(vault.getIdentities())) {
+                final byte[] wrapped = identity.mWrappedSecretKey;
+                final byte[] secret;
+                if (wrapped.length > 0 && wrapped[0] == WRAP_VERSION_2) {
+                    secret = keystoreDecrypt(ALIAS_SECRETS,
+                            Arrays.copyOfRange(wrapped, 1, wrapped.length), identity.mPublicKey);
+                } else {
+                    secret = keystoreDecrypt(ALIAS_SECRETS_V1, wrapped, identity.mPublicKey);
+                    vault.replaceIdentity(new Vault.Identity(identity.mId, identity.mName,
+                            identity.mPublicKey, wrapSecret(secret, identity.mPublicKey),
+                            identity.mCreatedAt));
+                    migrated = true;
+                }
+                keys.put(identity.mId, new CifraCrypto.KeyPair(identity.mPublicKey.clone(),
+                        secret));
+            }
+            if (migrated) {
+                persist(vault);
+                deleteKey(ALIAS_SECRETS_V1);
+            }
+            return keys;
+        } catch (VaultException e) {
+            for (final CifraCrypto.KeyPair pair : keys.values()) {
+                pair.wipe();
+            }
+            throw e;
+        }
+    }
+
+    public synchronized boolean hasRatchet(final String identityId, final String contactId)
+            throws VaultException {
+        return !getVault().sessionsFor(identityId, contactId).isEmpty();
+    }
+
+    /** Forgets the conversations with this contact: the next message starts a new one. */
+    public synchronized void resetRatchet(final String identityId, final String contactId)
+            throws VaultException {
+        final Vault vault = getVault();
+        vault.removeSessions(identityId, contactId);
+        persist(vault);
+    }
+
+    /**
+     * Encrypts with the ratchet, starting a conversation if there is none. The new state is
+     * written to disk before the ciphertext is returned, so a message key is never used twice.
+     */
+    public synchronized SendResult encryptRatchet(final String plaintext,
+            final Vault.Contact recipient, final Vault.Identity sender,
+            final CifraCrypto.KeyPair senderKeys) throws VaultException {
+        final Vault vault = getVault();
+        final long now = System.currentTimeMillis();
+        final Ratchet.Session stored = vault.activeSession(sender.mId, recipient.mId);
+        final Ratchet.Session session = stored != null ? stored.copy()
+                : Ratchet.startAsInitiator(senderKeys, sender.mId, recipient.mPublicKey,
+                        recipient.mId, now);
+        final boolean firstChain = session.isUnanswered();
+        final byte[] wire;
+        try {
+            wire = Ratchet.encrypt(session, plaintext, now);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            throw new VaultException(VaultException.Reason.FAILED, e);
+        }
+        vault.putSession(session);
+        persist(vault);
+        return new SendResult(CifraCrypto.armor(wire), firstChain);
+    }
+
+    /**
+     * Reads a message in the classic format (any unlocked identity, every contact as a possible
+     * sender) or the ratchet format (stored conversations first, then a conversation the
+     * contact is starting).
+     */
+    public synchronized ReadResult read(final byte[] wire,
+            final Map<String, CifraCrypto.KeyPair> keys, final long rereadMillis)
+            throws VaultException {
+        final Vault vault = getVault();
+        if (!Ratchet.isRatchetMessage(wire)) {
+            for (final Vault.Identity identity : vault.getIdentities()) {
+                final CifraCrypto.KeyPair pair = keys.get(identity.mId);
+                if (pair == null) {
+                    continue;
+                }
+                final DecryptResult result = decrypt(wire, identity, pair);
+                if (result != null) {
+                    return new ReadResult(ReadResult.Status.OK, result, false, false, false,
+                            false);
+                }
+            }
+            return ReadResult.of(ReadResult.Status.NOT_MINE);
+        }
+        final long now = System.currentTimeMillis();
+        ReadResult.Status failure = ReadResult.Status.NOT_MINE;
+        for (final Ratchet.Session session : new ArrayList<>(vault.getSessions())) {
+            if (!keys.containsKey(session.mIdentityId)) {
+                continue;
+            }
+            final Ratchet.Result result = Ratchet.decrypt(session, wire, now, rereadMillis);
+            if (result.mStatus == Ratchet.Status.OK) {
+                vault.putSession(result.mSession);
+                persist(vault);
+                return ratchetResult(vault, result, false);
+            }
+            failure = worse(failure, result.mStatus);
+        }
+        for (final Vault.Identity identity : vault.getIdentities()) {
+            final CifraCrypto.KeyPair pair = keys.get(identity.mId);
+            if (pair == null) {
+                continue;
+            }
+            for (final Vault.Contact contact : vault.getContacts()) {
+                final Ratchet.Result result = Ratchet.tryInitial(pair, identity.mId,
+                        contact.mPublicKey, contact.mId, wire, now, rereadMillis);
+                if (result.mStatus != Ratchet.Status.OK) {
+                    failure = worse(failure, result.mStatus);
+                    continue;
+                }
+                final List<Ratchet.Session> existing = vault.sessionsFor(identity.mId,
+                        contact.mId);
+                for (final Ratchet.Session session : existing) {
+                    if (session.startedWith(result.mSession.getFirstRemoteRatchet())) {
+                        // An old first message: it must not replace the conversation.
+                        result.mSession.wipe();
+                        return ReadResult.of(ReadResult.Status.ALREADY_READ);
+                    }
+                }
+                vault.putSession(result.mSession);
+                persist(vault);
+                return ratchetResult(vault, result, !existing.isEmpty());
+            }
+        }
+        return ReadResult.of(failure);
+    }
+
+    private static ReadResult.Status worse(final ReadResult.Status current,
+            final Ratchet.Status status) {
+        switch (status) {
+            case TOO_FAR:
+                return ReadResult.Status.TOO_FAR;
+            case ALREADY_READ:
+                return current == ReadResult.Status.TOO_FAR ? current
+                        : ReadResult.Status.ALREADY_READ;
+            default:
+                return current;
+        }
+    }
+
+    private static ReadResult ratchetResult(final Vault vault, final Ratchet.Result result,
+            final boolean restarted) {
+        final DecryptResult message = new DecryptResult(result.mPlaintext,
+                vault.findIdentity(result.mSession.mIdentityId),
+                vault.findContact(result.mSession.mContactId), null);
+        return new ReadResult(ReadResult.Status.OK, message, true, result.mFirstChain,
+                result.mReread, restarted);
+    }
+
+    public String encrypt(final String plaintext, final Vault.Contact recipient,
+            final CifraCrypto.KeyPair sender) throws VaultException {
+        try {
+            return CifraCrypto.armor(CifraCrypto.seal(plaintext, recipient.mPublicKey, sender));
         } catch (CryptoException | IllegalArgumentException | IllegalStateException e) {
             throw new VaultException(VaultException.Reason.FAILED, e);
-        } finally {
-            senderKeys.wipe();
         }
     }
 
     /**
-     * Opens a message with the private key of the given identity, trying every contact (and the
+     * Opens a message with the unlocked key of the given identity, trying every contact (and the
      * own identities, for notes to self) as the sender.
      *
      * @return the result, or null if this identity cannot open the message.
      */
-    public DecryptResult decrypt(final byte[] wire, final Vault.Identity recipient)
-            throws VaultException {
+    public DecryptResult decrypt(final byte[] wire, final Vault.Identity recipient,
+            final CifraCrypto.KeyPair recipientKeys) throws VaultException {
         final Vault vault = getVault();
-        final CifraCrypto.KeyPair recipientKeys = unwrap(recipient);
-        try {
-            for (final Vault.Contact contact : vault.getContacts()) {
-                final String plaintext = CifraCrypto.open(wire, recipientKeys,
-                        contact.mPublicKey);
-                if (plaintext != null) {
-                    return new DecryptResult(plaintext, recipient, contact, null);
-                }
+        for (final Vault.Contact contact : vault.getContacts()) {
+            final String plaintext = CifraCrypto.open(wire, recipientKeys, contact.mPublicKey);
+            if (plaintext != null) {
+                return new DecryptResult(plaintext, recipient, contact, null);
             }
-            for (final Vault.Identity identity : vault.getIdentities()) {
-                final String plaintext = CifraCrypto.open(wire, recipientKeys,
-                        identity.mPublicKey);
-                if (plaintext != null) {
-                    return new DecryptResult(plaintext, recipient, null, identity);
-                }
-            }
-            return null;
-        } finally {
-            recipientKeys.wipe();
         }
+        for (final Vault.Identity identity : vault.getIdentities()) {
+            final String plaintext = CifraCrypto.open(wire, recipientKeys, identity.mPublicKey);
+            if (plaintext != null) {
+                return new DecryptResult(plaintext, recipient, null, identity);
+            }
+        }
+        return null;
     }
 
-    private CifraCrypto.KeyPair unwrap(final Vault.Identity identity) throws VaultException {
-        final byte[] secret = keystoreDecrypt(ALIAS_SECRETS, identity.mWrappedSecretKey,
-                identity.mPublicKey);
-        return new CifraCrypto.KeyPair(identity.mPublicKey.clone(), secret);
+    /**
+     * Wraps a secret key with the authentication bound key. Needs a recent authentication.
+     */
+    private byte[] wrapSecret(final byte[] secret, final byte[] publicKey) throws VaultException {
+        if (!isDeviceSecure()) {
+            throw new VaultException(VaultException.Reason.NO_LOCK_SCREEN, null);
+        }
+        final byte[] sealed = keystoreEncrypt(ALIAS_SECRETS, secret, publicKey);
+        final byte[] wrapped = new byte[sealed.length + 1];
+        wrapped[0] = WRAP_VERSION_2;
+        System.arraycopy(sealed, 0, wrapped, 1, sealed.length);
+        return wrapped;
+    }
+
+    private static void deleteKey(final String alias) {
+        try {
+            final KeyStore keyStore = KeyStore.getInstance(ANDROID_KEYSTORE);
+            keyStore.load(null);
+            keyStore.deleteEntry(alias);
+        } catch (GeneralSecurityException | IOException e) {
+            Log.e(TAG, "Could not delete Keystore key", e);
+        }
     }
 
     private static SecretKey getOrCreateKey(final String alias) throws GeneralSecurityException,
@@ -402,6 +647,17 @@ public final class VaultStore {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             builder.setIsStrongBoxBacked(strongBox);
             builder.setUnlockedDeviceRequired(unlockedDeviceRequired);
+        }
+        if (ALIAS_SECRETS.equals(alias)) {
+            // The private keys can only be unwrapped shortly after the owner proved who they are.
+            builder.setUserAuthenticationRequired(true);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                builder.setUserAuthenticationParameters(AUTH_WINDOW_SECONDS,
+                        KeyProperties.AUTH_BIOMETRIC_STRONG
+                                | KeyProperties.AUTH_DEVICE_CREDENTIAL);
+            } else {
+                builder.setUserAuthenticationValidityDurationSeconds(AUTH_WINDOW_SECONDS);
+            }
         }
         final KeyGenerator generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES,
                 ANDROID_KEYSTORE);
@@ -456,7 +712,7 @@ public final class VaultStore {
             return new VaultException(VaultException.Reason.KEY_LOST, e);
         }
         if (name.equals("UserNotAuthenticatedException")) {
-            return new VaultException(VaultException.Reason.DEVICE_LOCKED, e);
+            return new VaultException(VaultException.Reason.AUTH_REQUIRED, e);
         }
         return new VaultException(VaultException.Reason.FAILED, e);
     }

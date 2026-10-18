@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Hours a ratchet message can be read again; 0 means only once. -->
+    <string-array name="cifra_reread_values" translatable="false">
+        <item>0</item>
+        <item>1</item>
+        <item>12</item>
+        <item>24</item>
+    </string-array>
+</resources>

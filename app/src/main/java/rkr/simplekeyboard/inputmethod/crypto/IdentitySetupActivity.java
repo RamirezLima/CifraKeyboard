@@ -279,27 +279,55 @@ public final class IdentitySetupActivity extends Activity {
         }
 
         final String passphrase = mPassphrase.getText().toString();
-        setBusy(true);
-        VaultStore.runAsync(() -> VaultStore.getInstance(this).createIdentity(name, words,
-                passphrase), (identity, error) -> {
-                    Arrays.fill(words, null);
-                    if (isFinishing() || isDestroyed()) {
-                        return;
-                    }
-                    setBusy(false);
-                    if (error != null) {
-                        Toast.makeText(this, error.mReason
-                                == VaultStore.VaultException.Reason.DUPLICATE
-                                ? R.string.cifra_duplicate_identity
-                                : error.mReason == VaultStore.VaultException.Reason.DEVICE_LOCKED
-                                ? R.string.cifra_error_locked : R.string.cifra_error_generic,
-                                Toast.LENGTH_LONG).show();
-                        return;
-                    }
-                    Toast.makeText(this, R.string.cifra_identity_created, Toast.LENGTH_SHORT)
-                            .show();
-                    finish();
-                });
+        final VaultStore store = VaultStore.getInstance(this);
+        if (!store.isDeviceSecure()) {
+            Toast.makeText(this, R.string.cifra_no_lock_screen, Toast.LENGTH_LONG).show();
+            return;
+        }
+        // Wrapping the new secret key needs the Keystore key that only works right after the
+        // owner authenticated.
+        DeviceAuth.request(this, getString(R.string.cifra_auth_title_create), authenticated -> {
+            if (isFinishing() || isDestroyed()) {
+                Arrays.fill(words, null);
+                return;
+            }
+            if (!authenticated) {
+                Arrays.fill(words, null);
+                Toast.makeText(this, R.string.cifra_auth_failed, Toast.LENGTH_LONG).show();
+                return;
+            }
+            setBusy(true);
+            VaultStore.runAsync(() -> store.createIdentity(name, words, passphrase),
+                    (identity, error) -> {
+                        Arrays.fill(words, null);
+                        if (isFinishing() || isDestroyed()) {
+                            return;
+                        }
+                        setBusy(false);
+                        if (error != null) {
+                            Toast.makeText(this, errorMessage(error), Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        Toast.makeText(this, R.string.cifra_identity_created,
+                                Toast.LENGTH_SHORT).show();
+                        finish();
+                    });
+        });
+    }
+
+    private static int errorMessage(final VaultStore.VaultException error) {
+        switch (error.mReason) {
+            case DUPLICATE:
+                return R.string.cifra_duplicate_identity;
+            case DEVICE_LOCKED:
+                return R.string.cifra_error_locked;
+            case AUTH_REQUIRED:
+                return R.string.cifra_error_auth_expired;
+            case NO_LOCK_SCREEN:
+                return R.string.cifra_no_lock_screen;
+            default:
+                return R.string.cifra_error_generic;
+        }
     }
 
     private void setBusy(final boolean busy) {

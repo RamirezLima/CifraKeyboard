@@ -19,6 +19,9 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Fingerprint or face (strong class only) as an alternative to the screen lock when
+         opening the vault. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <!-- The keyboard never talks to the network. Strip the permission even if a library asks. -->
     <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
@@ -65,6 +68,16 @@
             android:label="@string/cifra_identity_setup_title"
             android:theme="@style/platformSettingsTheme"
             android:windowSoftInputMode="adjustResize" />
+
+        <!-- Shows the system authentication prompt for the keyboard, which cannot show it
+             itself because it is never the foreground app. -->
+        <activity
+            android:name=".crypto.AuthActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <receiver
             android:name=".latin.SystemBroadcastReceiver"

@@ -18,6 +18,11 @@ independente. Não confie nele para proteger informações das quais dependa a s
 
 - **Modo seguro.** Toque no cadeado, escolha o contato e escreva. O texto fica num rascunho dentro
   do teclado; o app só recebe o texto cifrado, e só depois que você aprova.
+- **Catraca (sigilo futuro).** As chaves mudam a cada resposta e são queimadas: quem roubar as
+  palavras depois não lê as mensagens antigas. O modo clássico, com chave fixa, continua
+  disponível para quem escolher assumir esse risco.
+- **Cofre com autenticação.** Cada abertura pede o bloqueio de tela ou a digital, e o próprio chip
+  se recusa a liberar as chaves sem isso.
 - **Leitura.** Copie a mensagem cifrada recebida. O teclado mostra o botão Ler e exibe o texto
   decifrado apenas na própria janela, sem opção de copiar.
 - **Identidades a partir de palavras BIP39.** 12 ou 24 palavras da lista oficial em inglês e uma
@@ -41,7 +46,7 @@ que o app guarda e o que não guarda está em [PRIVACY.md](PRIVACY.md).
 | | Simple Keyboard | Cifra Keyboard |
 |---|---|---|
 | ID do app | `rkr.simplekeyboard.inputmethod` | `org.cifra.keyboard` (os dois podem ser instalados juntos) |
-| Criptografia | não tem | modo seguro, identidades BIP39, HPKE |
+| Criptografia | não tem | modo seguro, identidades BIP39, catraca (Double Ratchet) e modo clássico (HPKE) |
 | Teclado na tela com teclado físico conectado | desligado por padrão | ligado por padrão |
 | Backup do Android | ligado | desligado |
 | Política de privacidade e licença | abrem páginas no GitHub | exibidas no próprio app |

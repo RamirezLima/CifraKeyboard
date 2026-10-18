@@ -18,13 +18,13 @@ package rkr.simplekeyboard.inputmethod.crypto;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.KeyguardManager;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
@@ -49,6 +49,13 @@ import rkr.simplekeyboard.inputmethod.R;
  */
 public final class CryptoSettingsFragment extends PreferenceFragment {
     private VaultStore mStore;
+    /** Every visit to this screen asks for the screen lock or a strong biometric. */
+    private boolean mUnlocked;
+    private boolean mAuthInProgress;
+    /** The owner cancelled the prompt: wait for a tap instead of asking again in a loop. */
+    private boolean mDeclined;
+    /** Set while one of our own screens covers this one, so coming back does not lock it. */
+    private boolean mOpeningOwnScreen;
 
     @Override
     public void onCreate(final Bundle savedInstanceState) {
@@ -63,7 +70,69 @@ public final class CryptoSettingsFragment extends PreferenceFragment {
     @Override
     public void onResume() {
         super.onResume();
-        rebuild();
+        mOpeningOwnScreen = false;
+        if (mUnlocked) {
+            rebuild();
+            return;
+        }
+        showLocked();
+        if (!mDeclined) {
+            requestUnlock();
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (!mOpeningOwnScreen) {
+            // Leaving the screen closes the vault: the next visit asks again.
+            mUnlocked = false;
+            mDeclined = false;
+            getPreferenceScreen().removeAll();
+        }
+    }
+
+    private void requestUnlock() {
+        if (mAuthInProgress || !mStore.isDeviceSecure()) {
+            return;
+        }
+        mAuthInProgress = true;
+        DeviceAuth.request(getActivity(), getString(R.string.cifra_auth_title_settings),
+                authenticated -> {
+                    mAuthInProgress = false;
+                    if (getActivity() == null) {
+                        return;
+                    }
+                    if (authenticated) {
+                        mUnlocked = true;
+                        mDeclined = false;
+                        rebuild();
+                    } else {
+                        mDeclined = true;
+                        showLocked();
+                    }
+                });
+    }
+
+    private void showLocked() {
+        final PreferenceScreen screen = getPreferenceScreen();
+        screen.removeAll();
+        if (!mStore.isDeviceSecure()) {
+            screen.addPreference(info(getString(R.string.cifra_no_lock_screen), null));
+        } else {
+            final Preference unlock = action(R.string.cifra_locked_title,
+                    R.string.cifra_locked_summary);
+            unlock.setOnPreferenceClickListener(p -> {
+                requestUnlock();
+                return true;
+            });
+            screen.addPreference(unlock);
+        }
+        // What the device's secure hardware can do is not secret, and matters before the
+        // first identity is created.
+        screen.addPreference(keystorePreference());
+        // Erasing never needs authentication: destroying the keys must always be possible.
+        screen.addPreference(wipeAction());
     }
 
     private void rebuild() {
@@ -80,11 +149,6 @@ public final class CryptoSettingsFragment extends PreferenceFragment {
                 addSecurityCategory(screen);
             }
             return;
-        }
-
-        final KeyguardManager keyguard = activity.getSystemService(KeyguardManager.class);
-        if (keyguard != null && !keyguard.isDeviceSecure()) {
-            screen.addPreference(info(getString(R.string.cifra_no_lock_screen), null));
         }
 
         final PreferenceCategory identities = category(screen, R.string.cifra_identities);
@@ -105,6 +169,7 @@ public final class CryptoSettingsFragment extends PreferenceFragment {
         final Preference addIdentity = action(R.string.cifra_add_identity,
                 R.string.cifra_add_identity_summary);
         addIdentity.setOnPreferenceClickListener(p -> {
+            mOpeningOwnScreen = true;
             startActivity(new Intent(activity, IdentitySetupActivity.class));
             return true;
         });
@@ -138,6 +203,7 @@ public final class CryptoSettingsFragment extends PreferenceFragment {
         final PreferenceCategory security = category(screen, R.string.cifra_security);
         security.addPreference(info(getString(R.string.cifra_about_title),
                 getString(R.string.cifra_about_summary)));
+        security.addPreference(keystorePreference());
         final SwitchPreference screenReader = new SwitchPreference(getActivity());
         screenReader.setKey(SecureKeyboard.PREF_SCREEN_READER);
         screenReader.setDefaultValue(false);
@@ -147,6 +213,116 @@ public final class CryptoSettingsFragment extends PreferenceFragment {
                 ? R.string.cifra_screen_reader_summary_on
                 : R.string.cifra_screen_reader_summary_on_legacy);
         security.addPreference(screenReader);
+        final ListPreference reread = new ListPreference(getActivity());
+        reread.setKey(SecureKeyboard.PREF_REREAD_HOURS);
+        reread.setTitle(R.string.cifra_reread_title);
+        reread.setDialogTitle(R.string.cifra_reread_title);
+        reread.setEntries(R.array.cifra_reread_entries);
+        reread.setEntryValues(R.array.cifra_reread_values);
+        reread.setDefaultValue("0");
+        reread.setOnPreferenceChangeListener((p, value) -> {
+            final int index = reread.findIndexOfValue((String) value);
+            p.setSummary(rereadSummary(reread, index));
+            return true;
+        });
+        security.addPreference(reread);
+        reread.setSummary(rereadSummary(reread, reread.findIndexOfValue(reread.getValue())));
+        security.addPreference(wipeAction());
+    }
+
+    private String rereadSummary(final ListPreference preference, final int index) {
+        final CharSequence[] entries = preference.getEntries();
+        final CharSequence entry = entries[index >= 0 ? index : 0];
+        return getString(R.string.cifra_reread_summary, entry);
+    }
+
+    private Preference keystorePreference() {
+        final Preference preference = new Preference(getActivity());
+        preference.setTitle(R.string.cifra_keystore_title);
+        final KeystoreCapabilities caps = KeystoreCapabilities.load(getActivity());
+        if (caps == null) {
+            preference.setSummary(R.string.cifra_keystore_measuring);
+            KeystoreCapabilities.ensureProbed(getActivity(), result -> {
+                if (getActivity() == null) {
+                    return;
+                }
+                if (mUnlocked) {
+                    rebuild();
+                } else {
+                    showLocked();
+                }
+            });
+        } else {
+            preference.setSummary(keystoreSummary(caps));
+            preference.setOnPreferenceClickListener(p -> {
+                showKeystoreDetails(caps);
+                return true;
+            });
+        }
+        return preference;
+    }
+
+    private String keystoreSummary(final KeystoreCapabilities caps) {
+        if (caps.bestForX25519().isHardware()) {
+            return getString(R.string.cifra_keystore_summary_native,
+                    whereLabel(caps.bestForX25519()));
+        }
+        if (caps.bestForP256().isHardware()) {
+            return getString(R.string.cifra_keystore_summary_p256_only,
+                    whereLabel(caps.bestForP256()));
+        }
+        return getString(R.string.cifra_keystore_summary_wrapped, whereLabel(bestAes(caps)));
+    }
+
+    private void showKeystoreDetails(final KeystoreCapabilities caps) {
+        final String keyMint = caps.mKeyMintVersion > 0
+                ? String.valueOf(caps.mKeyMintVersion) : getString(R.string.cifra_keystore_unknown);
+        final String strongBox = caps.mStrongBoxFeature
+                ? getString(R.string.cifra_keystore_present) : getString(R.string.cifra_keystore_absent);
+        final String details = getString(R.string.cifra_keystore_details, keyMint, strongBox,
+                whereLabel(bestAes(caps)), whereLabel(caps.mX25519Generated),
+                whereLabel(caps.mX25519Imported),
+                whereLabel(caps.mP256GeneratedStrongBox.isHardware()
+                        ? caps.mP256GeneratedStrongBox : caps.mP256GeneratedTee),
+                whereLabel(caps.bestForP256()));
+        SecureDialogs.show(new AlertDialog.Builder(getActivity())
+                .setTitle(R.string.cifra_keystore_title)
+                .setMessage(details)
+                .setNeutralButton(R.string.cifra_keystore_retest, (d, w) ->
+                        KeystoreCapabilities.probeAsync(getActivity(), result -> {
+                            if (getActivity() == null) {
+                                return;
+                            }
+                            if (mUnlocked) {
+                                rebuild();
+                            } else {
+                                showLocked();
+                            }
+                            showKeystoreDetails(result);
+                        }))
+                .setPositiveButton(android.R.string.ok, null));
+    }
+
+    private static KeystoreCapabilities.Where bestAes(final KeystoreCapabilities caps) {
+        return caps.mAesStrongBox.isHardware() ? caps.mAesStrongBox : caps.mAesTee;
+    }
+
+    private String whereLabel(final KeystoreCapabilities.Where where) {
+        switch (where) {
+            case STRONGBOX:
+                return getString(R.string.cifra_where_strongbox);
+            case TEE:
+                return getString(R.string.cifra_where_tee);
+            case SECURE_HARDWARE:
+                return getString(R.string.cifra_where_hardware);
+            case SOFTWARE:
+                return getString(R.string.cifra_where_software);
+            default:
+                return getString(R.string.cifra_where_unavailable);
+        }
+    }
+
+    private Preference wipeAction() {
         final Preference wipe = action(R.string.cifra_wipe, R.string.cifra_wipe_summary);
         wipe.setOnPreferenceClickListener(p -> {
             SecureDialogs.show(new AlertDialog.Builder(getActivity())
@@ -155,11 +331,15 @@ public final class CryptoSettingsFragment extends PreferenceFragment {
                     .setPositiveButton(R.string.cifra_delete, (d, w) -> {
                         mStore.wipeEverything();
                         toast(R.string.cifra_wiped);
-                        rebuild();
+                        if (mUnlocked) {
+                            rebuild();
+                        } else {
+                            showLocked();
+                        }
                     }));
             return true;
         });
-        security.addPreference(wipe);
+        return wipe;
     }
 
     private void showIdentity(final Vault.Identity identity) {
@@ -363,6 +543,7 @@ public final class CryptoSettingsFragment extends PreferenceFragment {
         intent.setType("text/plain");
         intent.putExtra(Intent.EXTRA_TEXT, getString(R.string.cifra_share_text,
                 identity.getEncodedPublicKey(), identity.getFingerprint()));
+        mOpeningOwnScreen = true;
         startActivity(Intent.createChooser(intent, getString(R.string.cifra_share_public_key)));
     }
 
@@ -380,6 +561,10 @@ public final class CryptoSettingsFragment extends PreferenceFragment {
                 return getString(R.string.cifra_error_locked);
             case KEY_LOST:
                 return getString(R.string.cifra_error_key_lost);
+            case AUTH_REQUIRED:
+                return getString(R.string.cifra_error_auth_expired);
+            case NO_LOCK_SCREEN:
+                return getString(R.string.cifra_no_lock_screen);
             case DUPLICATE:
                 return getString(R.string.cifra_duplicate_identity);
             default:

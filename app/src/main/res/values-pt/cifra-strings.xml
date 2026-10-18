@@ -42,11 +42,45 @@
     <string name="cifra_error_locked">Desbloqueie o aparelho para usar suas chaves</string>
     <string name="cifra_error_key_lost">O cofre protegido do Keystore foi redefinido. Apague as chaves e restaure suas identidades pelas palavras.</string>
     <string name="cifra_error_generic">A operação falhou</string>
-    <string name="cifra_no_lock_screen">Este aparelho não tem bloqueio de tela: quem estiver com ele pode usar suas chaves.</string>
+    <string name="cifra_no_lock_screen">Configure um bloqueio de tela (PIN, padrão ou senha) neste aparelho para usar o cofre do Cifra.</string>
+    <string name="cifra_locked_title">Chaves e contatos estão bloqueados</string>
+    <string name="cifra_locked_summary">Toque para desbloquear com o bloqueio de tela ou a digital</string>
+
+    <!-- Autenticação para abrir o cofre -->
+    <string name="cifra_auth_title">Abrir o cofre do Cifra</string>
+    <string name="cifra_auth_title_settings">Abrir chaves e contatos</string>
+    <string name="cifra_auth_title_create">Confirme para criar a identidade</string>
+    <string name="cifra_auth_subtitle">Confirme que é você com o bloqueio de tela ou a digital</string>
+    <string name="cifra_auth_failed">O cofre continua fechado: a autenticação foi cancelada ou falhou.</string>
+    <string name="cifra_error_auth_expired">A autenticação expirou. Abra o cofre de novo.</string>
+    <string name="cifra_unlocking">Abrindo o cofre…</string>
     <string name="cifra_screen_reader_title">Permitir leitor de tela no modo seguro</string>
     <string name="cifra_screen_reader_summary_off">Desligado: rascunhos, mensagens decifradas e nomes de contatos no teclado ficam ocultos de todos os serviços de acessibilidade, inclusive o TalkBack.</string>
     <string name="cifra_screen_reader_summary_on">Ligado: o TalkBack pode ler o modo seguro. Outros apps que usam acessibilidade continuam sem acesso.</string>
     <string name="cifra_screen_reader_summary_on_legacy">Ligado: nesta versão do Android, qualquer serviço de acessibilidade instalado pode ler rascunhos, mensagens decifradas e nomes de contatos.</string>
+    <string name="cifra_keystore_title">Proteção das chaves neste aparelho</string>
+    <string name="cifra_keystore_measuring">Testando o hardware seguro…</string>
+    <string name="cifra_keystore_summary_native">O chip consegue guardar as chaves privadas (X25519) sozinho: <xliff:g id="WHERE" example="TEE">%s</xliff:g></string>
+    <string name="cifra_keystore_summary_p256_only">O chip só faz troca de chaves com P-256 (<xliff:g id="WHERE" example="StrongBox">%s</xliff:g>); o Cifra usa X25519</string>
+    <string name="cifra_keystore_summary_wrapped">O chip só lacra as chaves (<xliff:g id="WHERE" example="TEE">%s</xliff:g>); elas abrem na memória durante o uso</string>
+    <string name="cifra_keystore_details">Versão do KeyMint: <xliff:g id="VERSION" example="300">%1$s</xliff:g>\nStrongBox: <xliff:g id="STRONGBOX" example="ausente">%2$s</xliff:g>\n\nChaves AES que lacram o cofre: <xliff:g id="AES" example="TEE">%3$s</xliff:g>\nX25519 gerada no chip: <xliff:g id="X_GEN" example="TEE">%4$s</xliff:g>\nX25519 importada (das palavras BIP39): <xliff:g id="X_IMP" example="TEE">%5$s</xliff:g>\nP-256 gerada no chip: <xliff:g id="P_GEN" example="StrongBox">%6$s</xliff:g>\nP-256 importada: <xliff:g id="P_IMP" example="StrongBox">%7$s</xliff:g>\n\nEm uso hoje: chaves privadas lacradas pelo Keystore, abertas na memória durante a sessão.</string>
+    <string name="cifra_keystore_retest">Testar de novo</string>
+    <string name="cifra_keystore_present">presente</string>
+    <string name="cifra_keystore_absent">ausente</string>
+    <string name="cifra_keystore_unknown">desconhecida</string>
+    <string name="cifra_where_strongbox">StrongBox (chip de segurança separado)</string>
+    <string name="cifra_where_tee">TEE (área segura do processador)</string>
+    <string name="cifra_where_hardware">hardware seguro</string>
+    <string name="cifra_where_software">só software</string>
+    <string name="cifra_where_unavailable">indisponível</string>
+    <string name="cifra_reread_title">Reler mensagens</string>
+    <string name="cifra_reread_summary"><xliff:g id="CHOICE" example="Só uma vez">%s</xliff:g>. Vale para mensagens da catraca: depois desse prazo, a chave da mensagem é queimada.</string>
+    <string-array name="cifra_reread_entries">
+        <item>Só uma vez</item>
+        <item>Por 1 hora</item>
+        <item>Por 12 horas</item>
+        <item>Por 24 horas</item>
+    </string-array>
     <string name="cifra_about_title">Como funciona</string>
     <string name="cifra_about_summary">Sem internet. Palavras e passphrases nunca são guardadas. As chaves secretas ficam seladas pelo Android Keystore.</string>
 
@@ -84,6 +118,27 @@
     <!-- Teclado -->
     <string name="cifra_bar_idle">Toque no cadeado para escrever em sigilo</string>
     <string name="cifra_bar_to">Para: <xliff:g id="NAME" example="Maria">%s</xliff:g></string>
+    <string name="cifra_bar_to_ratchet">Para: <xliff:g id="NAME" example="Maria">%s</xliff:g> · catraca</string>
+    <string name="cifra_bar_to_classic">Para: <xliff:g id="NAME" example="Maria">%s</xliff:g> · clássico</string>
+    <string name="cifra_mode_title">Como começar a conversa com <xliff:g id="NAME" example="Maria">%s</xliff:g>?</string>
+    <string name="cifra_mode_ratchet">Catraca (recomendado)</string>
+    <string name="cifra_mode_ratchet_detail">As chaves mudam a cada resposta e são queimadas. Quem roubar as palavras depois não lê as mensagens antigas.</string>
+    <string name="cifra_mode_classic">Clássico</string>
+    <string name="cifra_mode_classic_detail">Sempre a mesma chave. Quem obtiver as suas palavras ou as de <xliff:g id="NAME" example="Maria">%s</xliff:g> lê todas as mensagens, de qualquer época.</string>
+    <string name="cifra_use_classic">Mudar para o modo clássico</string>
+    <string name="cifra_use_ratchet">Mudar para o modo catraca</string>
+    <string name="cifra_reset_ratchet">Reiniciar a catraca com <xliff:g id="NAME" example="Maria">%s</xliff:g></string>
+    <string name="cifra_reset_ratchet_confirm">Começar a conversa com <xliff:g id="NAME" example="Maria">%s</xliff:g> do zero? Mensagens da conversa atual que ainda não chegaram não vão mais abrir.</string>
+    <string name="cifra_reset_ratchet_action">Reiniciar</string>
+    <string name="cifra_preview_first_chain">Até <xliff:g id="NAME" example="Maria">%s</xliff:g> responder, esta conversa depende das chaves fixas.</string>
+    <string name="cifra_preview_classic">Modo clássico: quem obtiver as suas palavras ou as de <xliff:g id="NAME" example="Maria">%s</xliff:g> lê esta mensagem.</string>
+    <string name="cifra_read_ratchet">Catraca</string>
+    <string name="cifra_read_classic">Modo clássico</string>
+    <string name="cifra_read_first_chain">primeira mensagem, protegida só pelas chaves fixas</string>
+    <string name="cifra_read_reread">releitura</string>
+    <string name="cifra_read_restarted"><xliff:g id="NAME" example="Maria">%s</xliff:g> começou uma conversa nova (aparelho novo?)</string>
+    <string name="cifra_already_read">Esta mensagem já foi lida e a chave dela foi queimada.</string>
+    <string name="cifra_too_far">Muitas mensagens desta conversa se perderam no caminho. Reinicie a catraca com este contato.</string>
     <string name="cifra_bar_encrypt">Cifrar</string>
     <string name="cifra_bar_clipboard">Ler</string>
     <string name="cifra_bar_clipboard_status">Mensagem cifrada copiada</string>

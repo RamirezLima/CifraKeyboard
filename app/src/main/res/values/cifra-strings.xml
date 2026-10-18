@@ -42,11 +42,45 @@
     <string name="cifra_error_locked">Unlock the device to use your keys</string>
     <string name="cifra_error_key_lost">The protected key store was reset. Erase the keys and restore your identities from their words.</string>
     <string name="cifra_error_generic">The operation failed</string>
-    <string name="cifra_no_lock_screen">This device has no screen lock: anyone holding it can use your keys.</string>
+    <string name="cifra_no_lock_screen">Set a screen lock (PIN, pattern or password) on this device to use the Cifra vault.</string>
+    <string name="cifra_locked_title">Keys and contacts are locked</string>
+    <string name="cifra_locked_summary">Tap to unlock with your screen lock or fingerprint</string>
+
+    <!-- Authentication to open the vault -->
+    <string name="cifra_auth_title">Open the Cifra vault</string>
+    <string name="cifra_auth_title_settings">Open keys and contacts</string>
+    <string name="cifra_auth_title_create">Confirm to create the identity</string>
+    <string name="cifra_auth_subtitle">Confirm it is you with your screen lock or fingerprint</string>
+    <string name="cifra_auth_failed">The vault stays closed: the authentication was cancelled or failed.</string>
+    <string name="cifra_error_auth_expired">The authentication expired. Open the vault again.</string>
+    <string name="cifra_unlocking">Opening the vault…</string>
     <string name="cifra_screen_reader_title">Allow screen readers in secure mode</string>
     <string name="cifra_screen_reader_summary_off">Off: drafts, decrypted messages and contact names in the keyboard are hidden from every accessibility service, TalkBack included.</string>
     <string name="cifra_screen_reader_summary_on">On: TalkBack can read secure mode. Other apps that use accessibility still cannot.</string>
     <string name="cifra_screen_reader_summary_on_legacy">On: on this Android version, any installed accessibility service can read drafts, decrypted messages and contact names.</string>
+    <string name="cifra_keystore_title">Key protection on this device</string>
+    <string name="cifra_keystore_measuring">Testing the secure hardware…</string>
+    <string name="cifra_keystore_summary_native">The chip can keep the private keys (X25519) by itself: <xliff:g id="WHERE" example="TEE">%s</xliff:g></string>
+    <string name="cifra_keystore_summary_p256_only">The chip only does key agreement with P-256 (<xliff:g id="WHERE" example="StrongBox">%s</xliff:g>); Cifra uses X25519</string>
+    <string name="cifra_keystore_summary_wrapped">The chip only seals the keys (<xliff:g id="WHERE" example="TEE">%s</xliff:g>); they open in memory while in use</string>
+    <string name="cifra_keystore_details">KeyMint version: <xliff:g id="VERSION" example="300">%1$s</xliff:g>\nStrongBox: <xliff:g id="STRONGBOX" example="absent">%2$s</xliff:g>\n\nAES keys that seal the vault: <xliff:g id="AES" example="TEE">%3$s</xliff:g>\nX25519 generated in the chip: <xliff:g id="X_GEN" example="TEE">%4$s</xliff:g>\nX25519 imported (from BIP39 words): <xliff:g id="X_IMP" example="TEE">%5$s</xliff:g>\nP-256 generated in the chip: <xliff:g id="P_GEN" example="StrongBox">%6$s</xliff:g>\nP-256 imported: <xliff:g id="P_IMP" example="StrongBox">%7$s</xliff:g>\n\nIn use today: private keys sealed by the Keystore, opened in memory during a session.</string>
+    <string name="cifra_keystore_retest">Test again</string>
+    <string name="cifra_keystore_present">present</string>
+    <string name="cifra_keystore_absent">absent</string>
+    <string name="cifra_keystore_unknown">unknown</string>
+    <string name="cifra_where_strongbox">StrongBox (separate security chip)</string>
+    <string name="cifra_where_tee">TEE (secure area of the processor)</string>
+    <string name="cifra_where_hardware">secure hardware</string>
+    <string name="cifra_where_software">software only</string>
+    <string name="cifra_where_unavailable">not available</string>
+    <string name="cifra_reread_title">Read messages again</string>
+    <string name="cifra_reread_summary"><xliff:g id="CHOICE" example="Only once">%s</xliff:g>. Applies to ratchet messages: after this, the message key is burned.</string>
+    <string-array name="cifra_reread_entries">
+        <item>Only once</item>
+        <item>For 1 hour</item>
+        <item>For 12 hours</item>
+        <item>For 24 hours</item>
+    </string-array>
     <string name="cifra_about_title">How it works</string>
     <string name="cifra_about_summary">Offline. Words and passphrases are never stored. Secret keys are sealed by the Android Keystore.</string>
 
@@ -84,6 +118,27 @@
     <!-- Keyboard -->
     <string name="cifra_bar_idle">Tap the lock to write in secret</string>
     <string name="cifra_bar_to">To: <xliff:g id="NAME" example="Maria">%s</xliff:g></string>
+    <string name="cifra_bar_to_ratchet">To: <xliff:g id="NAME" example="Maria">%s</xliff:g> · ratchet</string>
+    <string name="cifra_bar_to_classic">To: <xliff:g id="NAME" example="Maria">%s</xliff:g> · classic</string>
+    <string name="cifra_mode_title">How to start the conversation with <xliff:g id="NAME" example="Maria">%s</xliff:g>?</string>
+    <string name="cifra_mode_ratchet">Ratchet (recommended)</string>
+    <string name="cifra_mode_ratchet_detail">Keys change with every answer and are burned. Whoever steals the words later cannot read old messages.</string>
+    <string name="cifra_mode_classic">Classic</string>
+    <string name="cifra_mode_classic_detail">Always the same key. Anyone who gets your words or <xliff:g id="NAME" example="Maria">%s</xliff:g>\'s can read every message, from any time.</string>
+    <string name="cifra_use_classic">Switch to classic mode</string>
+    <string name="cifra_use_ratchet">Switch to ratchet mode</string>
+    <string name="cifra_reset_ratchet">Restart the ratchet with <xliff:g id="NAME" example="Maria">%s</xliff:g></string>
+    <string name="cifra_reset_ratchet_confirm">Start the conversation with <xliff:g id="NAME" example="Maria">%s</xliff:g> over? Messages of the current conversation that have not arrived yet will no longer open.</string>
+    <string name="cifra_reset_ratchet_action">Restart</string>
+    <string name="cifra_preview_first_chain">Until <xliff:g id="NAME" example="Maria">%s</xliff:g> answers, this conversation relies on the fixed keys.</string>
+    <string name="cifra_preview_classic">Classic mode: anyone who gets your words or <xliff:g id="NAME" example="Maria">%s</xliff:g>\'s can read this message.</string>
+    <string name="cifra_read_ratchet">Ratchet</string>
+    <string name="cifra_read_classic">Classic mode</string>
+    <string name="cifra_read_first_chain">first message, protected by the fixed keys only</string>
+    <string name="cifra_read_reread">read again</string>
+    <string name="cifra_read_restarted"><xliff:g id="NAME" example="Maria">%s</xliff:g> started a new conversation (new phone?)</string>
+    <string name="cifra_already_read">This message was already read and its key was burned.</string>
+    <string name="cifra_too_far">Too many messages of this conversation were lost on the way. Restart the ratchet with this contact.</string>
     <string name="cifra_bar_encrypt">Encrypt</string>
     <string name="cifra_bar_clipboard">Read</string>
     <string name="cifra_bar_clipboard_status">Encrypted message copied</string>
