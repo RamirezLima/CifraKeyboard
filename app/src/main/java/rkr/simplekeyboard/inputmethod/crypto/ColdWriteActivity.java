@@ -18,13 +18,19 @@ package rkr.simplekeyboard.inputmethod.crypto;
 
 import android.app.ActionBar;
 import android.app.Activity;
+import android.database.ContentObserver;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import java.lang.ref.WeakReference;
 
@@ -35,6 +41,9 @@ import rkr.simplekeyboard.inputmethod.R;
  * messages are written in secure mode and shown as QR codes. It holds no keys, so it does not
  * ask for the screen lock; the keyboard asks when the vault opens. Anything typed outside secure
  * mode is erased when the screen is left.
+ *
+ * The field only works while Cifra is the keyboard in use: with another one, whatever is typed
+ * would go through that keyboard first.
  */
 public final class ColdWriteActivity extends Activity {
     /** Tells the keyboard that this field is the writing area. */
@@ -44,6 +53,20 @@ public final class ColdWriteActivity extends Activity {
     private static WeakReference<ColdWriteActivity> sResumed = new WeakReference<>(null);
 
     private EditText mText;
+    private View mKeyboardBanner;
+    private TextView mKeyboardMessage;
+    private Button mKeyboardAction;
+    /** Opening the screen offers to switch to Cifra once, not every time it gets the focus. */
+    private boolean mOfferKeyboardSwitch;
+    /** Cifra became the keyboard while the system list still had the focus. */
+    private boolean mShowKeyboardOnFocus;
+    private final ContentObserver mKeyboardObserver =
+            new ContentObserver(new Handler(Looper.getMainLooper())) {
+                @Override
+                public void onChange(final boolean selfChange) {
+                    refreshKeyboardState();
+                }
+            };
 
     /**
      * Opens the camera from this screen, so it stays in the app's own task instead of showing up
@@ -85,13 +108,21 @@ public final class ColdWriteActivity extends Activity {
         }
         mText = findViewById(R.id.cifra_cold_text);
         mText.setPrivateImeOptions(PRIVATE_IME_OPTION);
-        mText.requestFocus();
+        mKeyboardBanner = findViewById(R.id.cifra_cold_keyboard_banner);
+        mKeyboardMessage = findViewById(R.id.cifra_cold_keyboard_message);
+        mKeyboardAction = findViewById(R.id.cifra_cold_keyboard_action);
+        mOfferKeyboardSwitch = savedInstanceState == null;
+        // Before the window gets the focus, so another keyboard never opens on the field.
+        refreshKeyboardState();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         sResumed = new WeakReference<>(this);
+        getContentResolver().registerContentObserver(KeyboardCheck.currentKeyboardUri(), false,
+                mKeyboardObserver);
+        refreshKeyboardState();
     }
 
     @Override
@@ -99,7 +130,69 @@ public final class ColdWriteActivity extends Activity {
         if (sResumed.get() == this) {
             sResumed.clear();
         }
+        getContentResolver().unregisterContentObserver(mKeyboardObserver);
         super.onPause();
+    }
+
+    @Override
+    public void onWindowFocusChanged(final boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (!hasFocus) {
+            return;
+        }
+        final KeyboardCheck.State state = refreshKeyboardState();
+        if (mShowKeyboardOnFocus && state == KeyboardCheck.State.CURRENT) {
+            showKeyboard();
+        }
+        // The system list of keyboards only opens for the app whose window has the focus.
+        if (mOfferKeyboardSwitch && state == KeyboardCheck.State.NOT_CURRENT) {
+            mOfferKeyboardSwitch = false;
+            KeyboardCheck.showPicker(this);
+        }
+    }
+
+    private KeyboardCheck.State refreshKeyboardState() {
+        final KeyboardCheck.State state = KeyboardCheck.state(this);
+        final boolean current = state == KeyboardCheck.State.CURRENT;
+        mKeyboardBanner.setVisibility(current ? View.GONE : View.VISIBLE);
+        if (state == KeyboardCheck.State.NOT_ENABLED) {
+            mKeyboardMessage.setText(R.string.cifra_keyboard_not_enabled);
+            mKeyboardAction.setText(R.string.cifra_keyboard_open_settings);
+            mKeyboardAction.setOnClickListener(v -> KeyboardCheck.openSettings(this));
+        } else if (state == KeyboardCheck.State.NOT_CURRENT) {
+            mKeyboardMessage.setText(R.string.cifra_keyboard_not_current);
+            mKeyboardAction.setText(R.string.cifra_keyboard_switch);
+            mKeyboardAction.setOnClickListener(v -> KeyboardCheck.showPicker(this));
+        }
+        final boolean wasUsable = mText.isEnabled();
+        mText.setEnabled(current);
+        mText.setFocusable(current);
+        mText.setFocusableInTouchMode(current);
+        if (!current) {
+            mShowKeyboardOnFocus = false;
+            mText.clearFocus();
+            final InputMethodManager imm = getSystemService(InputMethodManager.class);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(mText.getWindowToken(), 0);
+            }
+        } else if (!wasUsable) {
+            // Just switched to Cifra: open it on the field.
+            mText.requestFocus();
+            showKeyboard();
+        } else if (!mText.hasFocus()) {
+            mText.requestFocus();
+        }
+        return state;
+    }
+
+    private void showKeyboard() {
+        final InputMethodManager imm = getSystemService(InputMethodManager.class);
+        if (imm == null || !hasWindowFocus()) {
+            mShowKeyboardOnFocus = true;
+            return;
+        }
+        mShowKeyboardOnFocus = false;
+        imm.showSoftInput(mText, 0);
     }
 
     @Override

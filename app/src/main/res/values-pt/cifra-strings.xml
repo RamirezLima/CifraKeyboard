@@ -185,7 +185,7 @@
     <string name="cifra_qr_show_clipboard_detail">Para o celular frio ler</string>
     <string name="cifra_qr_show_preview">Mostrar como QR code</string>
     <string name="cifra_qr_show_preview_detail">Para o celular com internet ler e enviar. Depois o rascunho é apagado, como ao inserir.</string>
-    <string name="cifra_qr_too_big">Grande demais para um QR code: até <xliff:g id="LIMIT" example="764">%d</xliff:g> letras, e letras com acento contam como duas.</string>
+    <string name="cifra_qr_too_big">Grande demais para os QR codes: até <xliff:g id="LIMIT" example="2044">%d</xliff:g> letras, e letras com acento contam como duas.</string>
     <string name="cifra_qr_result_title">Mensagem cifrada lida do QR code</string>
     <string name="cifra_qr_result_info_cold">Leia aqui se ela for para você, ou insira no app para enviar.</string>
     <string name="cifra_qr_result_info_hot">Insira no app para enviar. Este celular não tem chaves para lê-la.</string>
@@ -201,7 +201,8 @@
     <string name="cifra_qr_camera_error">Não foi possível abrir a câmera.</string>
     <string name="cifra_qr_online_warning">Este celular guarda chaves e não está em modo avião. Um celular frio deve ficar sempre offline: modo avião ligado, Wi-Fi e Bluetooth desligados.</string>
     <string name="cifra_qr_show_title">Mensagem cifrada</string>
-    <string name="cifra_qr_show_hint">Leia com o Cifra no outro celular. Este código só tem texto cifrado.</string>
+    <string name="cifra_qr_show_hint">Aponte o Cifra do outro celular para estes códigos até ele ler todas as partes. Eles só têm texto cifrado.</string>
+    <string name="cifra_qr_parts">Lidas <xliff:g id="RECEIVED" example="2">%1$d</xliff:g> de <xliff:g id="TOTAL" example="4">%2$d</xliff:g> partes. Continue apontando para os códigos.</string>
     <string name="cifra_qr_image_description">QR code da mensagem cifrada</string>
     <string name="cifra_qr_key_description">QR code da chave pública</string>
     <string name="cifra_qr_key_hint">Para adicionar você como contato, a outra pessoa pode ler este código com o Cifra.</string>
@@ -212,8 +213,12 @@
     <string name="cifra_qr_switch_summary_on">Lê e mostra mensagens cifradas entre este celular e um celular frio. A câmera só é usada enquanto um código é lido.</string>
     <string name="cifra_cold_howto_title">Como usar um celular frio</string>
     <string name="cifra_cold_howto_summary">Um celular que nunca fica online guarda as chaves; o que tem internet só leva texto cifrado.</string>
-    <string name="cifra_cold_howto_text">O celular frio guarda suas identidades e contatos e nunca fica online. O celular com internet não guarda chaves: só leva texto cifrado.\n\nPara enviar: no celular frio, abra a área de escrita, toque no cadeado, escreva e cifre, e então toque em \"Mostrar como QR code\". No celular com internet, toque no botão de QR do teclado, leia o código e insira a mensagem na conversa.\n\nPara ler: no celular com internet, copie a mensagem cifrada, toque no botão de QR e mostre-a como QR code. No celular frio, abra a área de escrita, toque no botão de QR e leia o código. A mensagem só aparece no celular frio.\n\nNunca digite um segredo no celular com internet. Deixe o celular frio em modo avião, com Wi-Fi e Bluetooth desligados, e ligue o botão de QR code no celular com internet; na área de escrita do celular frio ele sempre aparece. Um QR code comporta até <xliff:g id="LIMIT" example="764">%d</xliff:g> letras.</string>
+    <string name="cifra_cold_howto_text">O celular frio guarda suas identidades e contatos e nunca fica online. O celular com internet não guarda chaves: só leva texto cifrado.\n\nPara enviar: no celular frio, abra a área de escrita, toque no cadeado, escreva e cifre, e então toque em \"Mostrar como QR code\". No celular com internet, toque no botão de QR do teclado, leia o código e insira a mensagem na conversa.\n\nPara ler: no celular com internet, copie a mensagem cifrada, toque no botão de QR e mostre-a como QR code. No celular frio, abra a área de escrita, toque no botão de QR e leia o código. A mensagem só aparece no celular frio.\n\nNunca digite um segredo no celular com internet. Deixe o celular frio em modo avião, com Wi-Fi e Bluetooth desligados, e ligue o botão de QR code no celular com internet; na área de escrita do celular frio ele sempre aparece. A mensagem vai como uma sequência de códigos pequenos e pode ter até <xliff:g id="LIMIT" example="2044">%d</xliff:g> letras.</string>
     <string name="cifra_cold_write_title">Área de escrita</string>
     <string name="cifra_cold_write_summary">Um campo de texto para abrir o teclado no celular frio. Nada digitado aqui é guardado.</string>
+    <string name="cifra_keyboard_not_current">O teclado em uso não é o Cifra. Para que nada do que você escreve passe por outro teclado, este campo só funciona com o Cifra.</string>
+    <string name="cifra_keyboard_not_enabled">O Cifra Keyboard não está ativado nas configurações do Android. Ative-o e depois escolha-o como teclado em uso.</string>
+    <string name="cifra_keyboard_switch">Trocar teclado</string>
+    <string name="cifra_keyboard_open_settings">Abrir configurações</string>
     <string name="cifra_cold_write_hint">Toque no cadeado do teclado para escrever no modo seguro.</string>
 </resources>

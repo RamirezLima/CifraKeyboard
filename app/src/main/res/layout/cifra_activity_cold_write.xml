@@ -7,6 +7,32 @@
     android:orientation="vertical"
     android:padding="16dp">
 
+    <!-- Shown while another keyboard is in use: the field stays locked until Cifra is. -->
+    <LinearLayout
+        android:id="@+id/cifra_cold_keyboard_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/cifra_alert_background"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/cifra_cold_keyboard_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/cifra_on_accent"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/cifra_cold_keyboard_action"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
