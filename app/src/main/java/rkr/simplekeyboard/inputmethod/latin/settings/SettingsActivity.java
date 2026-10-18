@@ -37,6 +37,7 @@ import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 
 import rkr.simplekeyboard.inputmethod.R;
+import rkr.simplekeyboard.inputmethod.crypto.KeystoreCapabilities;
 import rkr.simplekeyboard.inputmethod.latin.utils.FragmentUtils;
 
 public class SettingsActivity extends PreferenceActivity {
@@ -98,6 +99,8 @@ public class SettingsActivity extends PreferenceActivity {
         super.onCreate(savedState);
         // Key and contact screens must not appear in screenshots or the recents preview.
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        // First launch (and after system updates): find out what the secure hardware can do.
+        KeystoreCapabilities.ensureProbed(this, null);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             final View container = (View) getListView().getParent().getParent();

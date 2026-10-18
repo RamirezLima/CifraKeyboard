@@ -16,10 +16,16 @@
 
 package rkr.simplekeyboard.inputmethod.crypto;
 
+import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Handler;
@@ -31,6 +37,7 @@ import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
+import android.text.style.ReplacementSpan;
 import android.util.Log;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
@@ -46,8 +53,11 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import rkr.simplekeyboard.inputmethod.R;
@@ -68,7 +78,14 @@ import rkr.simplekeyboard.inputmethod.latin.settings.SettingsValues;
  */
 public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChangedListener {
     private static final String TAG = SecureKeyboard.class.getSimpleName();
-    private static final long DRAFT_WIPE_DELAY_MILLIS = TimeUnit.MINUTES.toMillis(5);
+    /** A secure session hidden for this long ends: draft and unlocked keys are wiped. */
+    private static final long SESSION_TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(5);
+    /** Same rhythm as the cursor of a text field. */
+    private static final long CARET_BLINK_MILLIS = 500;
+    /** Word joiner: invisible and keeps the caret on the line of the last word. */
+    private static final char CARET_PLACEHOLDER = '\u2060';
+    /** The hint is the text color at this opacity, so it never looks like typed text. */
+    private static final int HINT_ALPHA_PERCENT = 55;
     private static final int MAX_DRAFT_CHARS = CifraCrypto.MAX_PLAINTEXT_BYTES / 4;
 
     /** Lets screen readers into secure mode. Off by default. */
@@ -126,6 +143,7 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         PICK_RECIPIENT,
         PICK_SENDER,
         PICK_IDENTITY,
+        PICK_MODE,
         BUSY,
         PREVIEW,
         READ,
@@ -136,7 +154,14 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     private final VaultStore mStore;
     private final ClipboardManager mClipboard;
     private final Handler mHandler = new Handler(Looper.getMainLooper());
-    private final Runnable mWipeDraftRunnable = this::wipeDraft;
+    private final Runnable mEndSessionRunnable = this::endSession;
+    private final Runnable mBlinkRunnable = this::blinkCaret;
+    private final BroadcastReceiver mScreenOffReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(final Context context, final Intent intent) {
+            onScreenOff();
+        }
+    };
 
     private View mFrame;
     private View mBar;
@@ -146,6 +171,7 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     private TextView mClipboardButton;
     private TextView mEncryptButton;
     private TextView mComposeText;
+    private CaretSpan mCaret;
     private View mOverlay;
     private TextView mOverlayTitle;
     private TextView mOverlaySubtitle;
@@ -165,6 +191,17 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     private String mPendingCiphertext;
     private boolean mClipboardHasMessage;
     private boolean mScreenReaderAllowed;
+    /**
+     * Identity keys unwrapped after the owner authenticated, by identity id. Empty means the
+     * vault is closed and the next use asks for authentication again.
+     */
+    private final Map<String, CifraCrypto.KeyPair> mSessionKeys = new HashMap<>();
+    private boolean mAuthInProgress;
+    /** Ratchet (keys burned as the conversation goes) or the classic format. */
+    private boolean mRatchetMode = true;
+
+    /** How long a ratchet message can be read again, in hours; 0 means only once. */
+    public static final String PREF_REREAD_HOURS = "pref_cifra_reread";
     /** Invalidates the results of background tasks the user walked away from. */
     private int mTaskGeneration;
 
@@ -178,15 +215,23 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         if (mClipboard != null) {
             mClipboard.addPrimaryClipChangedListener(this);
         }
+        final IntentFilter screenOff = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            mIme.registerReceiver(mScreenOffReceiver, screenOff, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            mIme.registerReceiver(mScreenOffReceiver, screenOff);
+        }
     }
 
     public void onDestroy() {
         if (mClipboard != null) {
             mClipboard.removePrimaryClipChangedListener(this);
         }
+        mIme.unregisterReceiver(mScreenOffReceiver);
         mHandler.removeCallbacksAndMessages(null);
         wipeDraft();
         mSecureSession = false;
+        lockSession();
     }
 
     /**
@@ -233,13 +278,14 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     }
 
     public void onStartInputView(final EditorInfo editorInfo) {
-        mHandler.removeCallbacks(mWipeDraftRunnable);
+        mHandler.removeCallbacks(mEndSessionRunnable);
         applyAccessibilityMode();
         refreshClipboardState();
         render();
     }
 
     public void onWindowHidden() {
+        mHandler.removeCallbacks(mBlinkRunnable);
         switch (mMode) {
             case IDLE:
             case COMPOSE:
@@ -249,9 +295,20 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
                 closeOverlay();
                 break;
         }
-        if (mSecureSession && mDraft.length() > 0) {
-            mHandler.removeCallbacks(mWipeDraftRunnable);
-            mHandler.postDelayed(mWipeDraftRunnable, DRAFT_WIPE_DELAY_MILLIS);
+        if (mSecureSession) {
+            mHandler.removeCallbacks(mEndSessionRunnable);
+            mHandler.postDelayed(mEndSessionRunnable, SESSION_TIMEOUT_MILLIS);
+        }
+    }
+
+    private void onScreenOff() {
+        if (mSecureSession) {
+            endSession();
+        } else {
+            if (mMode != Mode.IDLE) {
+                closeOverlay();
+            }
+            lockSession();
         }
     }
 
@@ -404,7 +461,9 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         renderDraft();
     }
 
-    private void startSession(final String recipientId, final String senderId) {
+    private void startSession(final String recipientId, final String senderId,
+            final boolean ratchet) {
+        mRatchetMode = ratchet;
         mRecipientId = recipientId;
         mSenderId = senderId;
         mSecureSession = true;
@@ -415,6 +474,8 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     }
 
     private void endSession() {
+        mHandler.removeCallbacks(mEndSessionRunnable);
+        lockSession();
         wipeDraft();
         mSecureSession = false;
         mRecipientId = null;
@@ -423,6 +484,67 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         hideOverlayViews();
         render();
         mIme.onSecureInputChanged();
+    }
+
+    // Vault unlock
+
+    /**
+     * Every opening of the vault asks the owner for the screen lock or a strong biometric. The
+     * identity keys are unwrapped right after, while the Keystore allows it, and kept only until
+     * the session ends.
+     */
+    private void unlockThen(final Runnable next) {
+        if (!mSessionKeys.isEmpty()) {
+            next.run();
+            return;
+        }
+        if (!mStore.isDeviceSecure()) {
+            showMessage(mIme.getString(R.string.cifra_secure_menu),
+                    mIme.getString(R.string.cifra_no_lock_screen));
+            return;
+        }
+        if (mAuthInProgress) {
+            return;
+        }
+        mAuthInProgress = true;
+        DeviceAuth.request(mIme, mIme.getString(R.string.cifra_auth_title), authenticated -> {
+            mAuthInProgress = false;
+            if (!authenticated) {
+                showMessage(mIme.getString(R.string.cifra_secure_menu),
+                        mIme.getString(R.string.cifra_auth_failed));
+                return;
+            }
+            final int generation = showBusy(mIme.getString(R.string.cifra_unlocking));
+            VaultStore.runAsync(mStore::unlockIdentities, (keys, error) -> {
+                if (generation != mTaskGeneration) {
+                    wipeKeys(keys);
+                    return;
+                }
+                if (error != null) {
+                    showError(error);
+                    return;
+                }
+                // Closing the busy overlay outside a session locks; add the keys after it.
+                closeOverlay();
+                mSessionKeys.putAll(keys);
+                next.run();
+            });
+        });
+    }
+
+    private void lockSession() {
+        wipeKeys(mSessionKeys);
+        mSessionKeys.clear();
+        mStore.clearCache();
+    }
+
+    private static void wipeKeys(final Map<String, CifraCrypto.KeyPair> keys) {
+        if (keys == null) {
+            return;
+        }
+        for (final CifraCrypto.KeyPair pair : keys.values()) {
+            pair.wipe();
+        }
     }
 
     // Bar actions
@@ -436,7 +558,7 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         if (mSecureSession) {
             showSessionMenu();
         } else {
-            showRecipientPicker();
+            unlockThen(this::showRecipientPicker);
         }
     }
 
@@ -447,14 +569,89 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         }
         final Vault.Contact recipient = vault.findContact(mRecipientId);
         showOverlay(Mode.MENU, mIme.getString(R.string.cifra_secure_menu),
-                recipient == null ? null : mIme.getString(R.string.cifra_bar_to, recipient.mName));
+                recipient == null ? null : toLabel(recipient.mName));
         addRow(mIme.getString(R.string.cifra_change_recipient), null, this::showRecipientPicker);
         if (vault.getIdentities().size() > 1) {
             addRow(mIme.getString(R.string.cifra_change_sender), senderName(vault),
                     this::showSenderPicker);
         }
+        if (recipient != null) {
+            addRow(mIme.getString(mRatchetMode ? R.string.cifra_use_classic
+                    : R.string.cifra_use_ratchet), null, () -> {
+                        mRatchetMode = !mRatchetMode;
+                        closeOverlay();
+                    });
+            if (mRatchetMode) {
+                addRow(mIme.getString(R.string.cifra_reset_ratchet, recipient.mName), null,
+                        () -> confirmResetRatchet(recipient));
+            }
+        }
         addRow(mIme.getString(R.string.cifra_manage_keys), null, this::openSettings);
         addRow(mIme.getString(R.string.cifra_exit_secure), null, this::endSession);
+    }
+
+    private void confirmResetRatchet(final Vault.Contact recipient) {
+        showMessage(mIme.getString(R.string.cifra_reset_ratchet, recipient.mName),
+                mIme.getString(R.string.cifra_reset_ratchet_confirm, recipient.mName));
+        setButtons(mIme.getString(android.R.string.cancel), this::closeOverlay,
+                mIme.getString(R.string.cifra_reset_ratchet_action), () -> {
+                    final Vault vault = loadVault();
+                    final Vault.Identity sender = vault == null ? null : resolveSender(vault);
+                    if (sender == null) {
+                        closeOverlay();
+                        return;
+                    }
+                    try {
+                        mStore.resetRatchet(sender.mId, recipient.mId);
+                        closeOverlay();
+                    } catch (VaultStore.VaultException e) {
+                        showError(e);
+                    }
+                });
+    }
+
+    /**
+     * Uses the ratchet right away when a conversation already exists; otherwise lets the user
+     * choose, and makes the risk of the classic format explicit.
+     */
+    private void chooseModeAndStart(final Vault.Contact contact) {
+        final Vault vault = loadVault();
+        if (vault == null) {
+            return;
+        }
+        final Vault.Identity sender = resolveSender(vault);
+        try {
+            if (sender != null && mStore.hasRatchet(sender.mId, contact.mId)) {
+                startSession(contact.mId, mSenderId, true);
+                return;
+            }
+        } catch (VaultStore.VaultException e) {
+            showError(e);
+            return;
+        }
+        showOverlay(Mode.PICK_MODE, mIme.getString(R.string.cifra_mode_title, contact.mName),
+                null);
+        addRow(mIme.getString(R.string.cifra_mode_ratchet),
+                mIme.getString(R.string.cifra_mode_ratchet_detail),
+                () -> startSession(contact.mId, mSenderId, true));
+        addRow(mIme.getString(R.string.cifra_mode_classic),
+                mIme.getString(R.string.cifra_mode_classic_detail, contact.mName),
+                () -> startSession(contact.mId, mSenderId, false));
+    }
+
+    private String toLabel(final String name) {
+        return mIme.getString(mRatchetMode ? R.string.cifra_bar_to_ratchet
+                : R.string.cifra_bar_to_classic, name);
+    }
+
+    private long rereadMillis() {
+        try {
+            final String hours = PreferenceManagerCompat.getDeviceSharedPreferences(mIme)
+                    .getString(PREF_REREAD_HOURS, "0");
+            return Math.max(0, Long.parseLong(hours)) * 60L * 60 * 1000;
+        } catch (NumberFormatException | ClassCastException e) {
+            return 0;
+        }
     }
 
     private void showRecipientPicker() {
@@ -474,7 +671,7 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
                 mIme.getString(R.string.cifra_sending_as, senderName(vault)));
         for (final Vault.Contact contact : vault.getContacts()) {
             addRow(contactLabel(contact), contact.getFingerprint(),
-                    () -> startSession(contact.mId, mSenderId));
+                    () -> chooseModeAndStart(contact));
         }
         if (vault.getIdentities().size() > 1) {
             addRow(mIme.getString(R.string.cifra_change_sender), null, this::showSenderPicker);
@@ -525,9 +722,27 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
                     mIme.getString(R.string.cifra_message_too_long));
             return;
         }
+        final CifraCrypto.KeyPair senderKeys = mSessionKeys.get(sender.mId);
+        if (senderKeys == null) {
+            // E.g. an identity created after the vault was opened.
+            lockSession();
+            unlockThen(this::onEncryptPressed);
+            return;
+        }
+        final CifraCrypto.KeyPair senderCopy = senderKeys.copy();
+        final boolean ratchet = mRatchetMode;
         final int generation = showBusy(mIme.getString(R.string.cifra_encrypting));
-        VaultStore.runAsync(() -> mStore.encrypt(plaintext, recipient, sender),
-                (armored, error) -> {
+        VaultStore.runAsync(() -> {
+            try {
+                if (ratchet) {
+                    return mStore.encryptRatchet(plaintext, recipient, sender, senderCopy);
+                }
+                return new VaultStore.SendResult(mStore.encrypt(plaintext, recipient,
+                        senderCopy), false);
+            } finally {
+                senderCopy.wipe();
+            }
+        }, (sent, error) -> {
                     if (generation != mTaskGeneration) {
                         return;
                     }
@@ -535,14 +750,24 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
                         showError(error);
                         return;
                     }
-                    mPendingCiphertext = armored;
-                    showPreview(recipient);
+                    mPendingCiphertext = sent.mArmored;
+                    final String note;
+                    if (!ratchet) {
+                        note = mIme.getString(R.string.cifra_preview_classic, recipient.mName);
+                    } else if (sent.mFirstChain) {
+                        note = mIme.getString(R.string.cifra_preview_first_chain,
+                                recipient.mName);
+                    } else {
+                        note = null;
+                    }
+                    showPreview(recipient, note);
                 });
     }
 
-    private void showPreview(final Vault.Contact recipient) {
+    private void showPreview(final Vault.Contact recipient, final String note) {
+        final String info = mIme.getString(R.string.cifra_preview_info, recipient.mName);
         showOverlay(Mode.PREVIEW, mIme.getString(R.string.cifra_preview_title, recipient.mName),
-                mIme.getString(R.string.cifra_preview_info, recipient.mName));
+                note == null ? info : info + " " + note);
         setBody(mPendingCiphertext, true);
         setButtons(mIme.getString(R.string.cifra_edit), () -> {
             mPendingCiphertext = null;
@@ -577,6 +802,10 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
                     mIme.getString(R.string.cifra_clipboard_invalid));
             return;
         }
+        unlockThen(() -> chooseIdentityAndDecrypt(wire));
+    }
+
+    private void chooseIdentityAndDecrypt(final byte[] wire) {
         final Vault vault = loadVault();
         if (vault == null) {
             return;
@@ -586,7 +815,8 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
             showSetupNeeded(mIme.getString(R.string.cifra_need_identity));
             return;
         }
-        if (identities.size() == 1) {
+        // Ratchet conversations know their identity; only the classic format needs a choice.
+        if (identities.size() == 1 || Ratchet.isRatchetMessage(wire)) {
             decrypt(wire, identities);
             return;
         }
@@ -599,31 +829,51 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     }
 
     private void decrypt(final byte[] wire, final List<Vault.Identity> candidates) {
+        final Map<String, CifraCrypto.KeyPair> keys = new HashMap<>();
+        for (final Vault.Identity identity : candidates) {
+            final CifraCrypto.KeyPair pair = mSessionKeys.get(identity.mId);
+            if (pair != null) {
+                keys.put(identity.mId, pair.copy());
+            }
+        }
+        final long reread = rereadMillis();
         final int generation = showBusy(mIme.getString(R.string.cifra_decrypting));
         VaultStore.runAsync(() -> {
-            for (final Vault.Identity identity : candidates) {
-                final VaultStore.DecryptResult result = mStore.decrypt(wire, identity);
-                if (result != null) {
-                    return result;
-                }
+            try {
+                return mStore.read(wire, keys, reread);
+            } finally {
+                wipeKeys(keys);
             }
-            return null;
         }, (result, error) -> {
             if (generation != mTaskGeneration) {
                 return;
             }
             if (error != null) {
                 showError(error);
-            } else if (result == null) {
-                showMessage(mIme.getString(R.string.cifra_bar_clipboard_status),
-                        mIme.getString(R.string.cifra_decrypt_failed));
-            } else {
-                showRead(result);
+                return;
+            }
+            switch (result.mStatus) {
+                case OK:
+                    showRead(result);
+                    break;
+                case ALREADY_READ:
+                    showMessage(mIme.getString(R.string.cifra_bar_clipboard_status),
+                            mIme.getString(R.string.cifra_already_read));
+                    break;
+                case TOO_FAR:
+                    showMessage(mIme.getString(R.string.cifra_bar_clipboard_status),
+                            mIme.getString(R.string.cifra_too_far));
+                    break;
+                default:
+                    showMessage(mIme.getString(R.string.cifra_bar_clipboard_status),
+                            mIme.getString(R.string.cifra_decrypt_failed));
+                    break;
             }
         });
     }
 
-    private void showRead(final VaultStore.DecryptResult result) {
+    private void showRead(final VaultStore.ReadResult read) {
+        final VaultStore.DecryptResult result = read.mMessage;
         final String title;
         if (result.mSenderContact != null) {
             title = mIme.getString(result.mSenderContact.mVerified ? R.string.cifra_from
@@ -631,14 +881,27 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         } else {
             title = mIme.getString(R.string.cifra_from_self, result.mSenderIdentity.mName);
         }
-        showOverlay(Mode.READ, title,
-                mIme.getString(R.string.cifra_read_info, result.mRecipient.mName));
+        final List<String> notes = new ArrayList<>();
+        notes.add(mIme.getString(read.mRatchet ? R.string.cifra_read_ratchet
+                : R.string.cifra_read_classic));
+        if (read.mFirstChain) {
+            notes.add(mIme.getString(R.string.cifra_read_first_chain));
+        }
+        if (read.mReread) {
+            notes.add(mIme.getString(R.string.cifra_read_reread));
+        }
+        if (read.mRestarted && result.mSenderContact != null) {
+            notes.add(mIme.getString(R.string.cifra_read_restarted,
+                    result.mSenderContact.mName));
+        }
+        showOverlay(Mode.READ, title, TextUtils.join(" · ", notes) + ". "
+                + mIme.getString(R.string.cifra_read_info, result.mRecipient.mName));
         setBody(result.mPlaintext, false);
         final Vault.Contact sender = result.mSenderContact;
         if (sender != null) {
             setButtons(mIme.getString(R.string.cifra_close), this::closeOverlay,
                     mIme.getString(R.string.cifra_reply),
-                    () -> startSession(sender.mId, result.mRecipient.mId));
+                    () -> startSession(sender.mId, result.mRecipient.mId, read.mRatchet));
         } else {
             setButtons(null, null, mIme.getString(R.string.cifra_close), this::closeOverlay);
         }
@@ -658,6 +921,13 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
                 break;
             case KEY_LOST:
                 message = R.string.cifra_error_key_lost;
+                break;
+            case AUTH_REQUIRED:
+                lockSession();
+                message = R.string.cifra_error_auth_expired;
+                break;
+            case NO_LOCK_SCREEN:
+                message = R.string.cifra_no_lock_screen;
                 break;
             default:
                 message = R.string.cifra_error_generic;
@@ -759,6 +1029,10 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
 
     private void closeOverlay() {
         mTaskGeneration++;
+        if (!mSecureSession) {
+            // A vault opened just to read a message, or to pick a recipient, closes again.
+            lockSession();
+        }
         mMode = mSecureSession ? Mode.COMPOSE : Mode.IDLE;
         hideOverlayViews();
         render();
@@ -896,7 +1170,7 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         if (!available) {
             status = mIme.getString(R.string.cifra_bar_unavailable);
         } else if (mSecureSession) {
-            status = mIme.getString(R.string.cifra_bar_to, recipientName());
+            status = toLabel(recipientName());
         } else if (mClipboardHasMessage) {
             status = mIme.getString(R.string.cifra_bar_clipboard_status);
         } else {
@@ -910,6 +1184,7 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         if (mComposeText == null) {
             return;
         }
+        mHandler.removeCallbacks(mBlinkRunnable);
         if (mMode != Mode.COMPOSE) {
             mComposeText.setText(null);
             mComposeText.setVisibility(View.GONE);
@@ -917,18 +1192,84 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         }
         mComposeText.setVisibility(View.VISIBLE);
         mEncryptButton.setEnabled(mDraft.length() > 0);
+        final SpannableStringBuilder text = new SpannableStringBuilder(mDraft);
+        // Like a text field, the caret is solid right after each change and then blinks.
+        final int width = Math.round(2 * mIme.getResources().getDisplayMetrics().density);
+        mCaret = new CaretSpan(width, mIme.getColor(R.color.cifra_accent));
+        final int caret = text.length();
+        text.append(CARET_PLACEHOLDER);
+        text.setSpan(mCaret, caret, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         if (mDraft.length() == 0) {
-            mComposeText.setText(null);
-            mComposeText.setHint(mIme.getString(R.string.cifra_compose_hint, recipientName()));
+            final int hint = text.length();
+            text.append(mIme.getString(R.string.cifra_compose_hint, recipientName()));
+            text.setSpan(new ForegroundColorSpan(fade(mComposeText.getCurrentTextColor())), hint,
+                    text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        mComposeText.setText(text);
+        if (mDraft.length() == 0) {
+            mComposeText.scrollTo(0, 0);
+        } else {
+            mComposeText.post(this::scrollDraftToEnd);
+        }
+        mHandler.postDelayed(mBlinkRunnable, CARET_BLINK_MILLIS);
+    }
+
+    private void blinkCaret() {
+        if (mCaret == null || mComposeText == null) {
             return;
         }
-        final SpannableStringBuilder text = new SpannableStringBuilder(mDraft);
-        final int caret = text.length();
-        text.append('▏');
-        text.setSpan(new ForegroundColorSpan(mIme.getColor(R.color.cifra_accent)), caret,
-                text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        mComposeText.setText(text);
-        mComposeText.post(this::scrollDraftToEnd);
+        if (mMode != Mode.COMPOSE || !mComposeText.isShown()) {
+            // Stops solid; the next render starts blinking again.
+            mCaret.mVisible = true;
+            return;
+        }
+        mCaret.mVisible = !mCaret.mVisible;
+        mComposeText.invalidate();
+        mHandler.postDelayed(mBlinkRunnable, CARET_BLINK_MILLIS);
+    }
+
+    private static int fade(final int color) {
+        return Color.argb(Color.alpha(color) * HINT_ALPHA_PERCENT / 100, Color.red(color),
+                Color.green(color), Color.blue(color));
+    }
+
+    /**
+     * The draft's caret: a bar as tall as the text, drawn only while {@link #mVisible}. Blinking
+     * only redraws the view, so the draft is not copied again on every blink.
+     */
+    private static final class CaretSpan extends ReplacementSpan {
+        private final int mWidth;
+        private final int mColor;
+        boolean mVisible = true;
+
+        CaretSpan(final int width, final int color) {
+            mWidth = width;
+            mColor = color;
+        }
+
+        @Override
+        public int getSize(final Paint paint, final CharSequence text, final int start,
+                final int end, final Paint.FontMetricsInt fm) {
+            if (fm != null) {
+                paint.getFontMetricsInt(fm);
+            }
+            // The bar and a gap of the same width before the hint.
+            return mWidth * 2;
+        }
+
+        @Override
+        public void draw(final Canvas canvas, final CharSequence text, final int start,
+                final int end, final float x, final int top, final int y, final int bottom,
+                final Paint paint) {
+            if (!mVisible) {
+                return;
+            }
+            final Paint.FontMetricsInt metrics = paint.getFontMetricsInt();
+            final int color = paint.getColor();
+            paint.setColor(mColor);
+            canvas.drawRect(x, y + metrics.ascent, x + mWidth, y + metrics.descent, paint);
+            paint.setColor(color);
+        }
     }
 
     private void scrollDraftToEnd() {

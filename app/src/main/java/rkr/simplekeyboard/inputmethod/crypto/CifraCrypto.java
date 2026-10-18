@@ -90,6 +90,11 @@ public final class CifraCrypto {
         public void wipe() {
             Arrays.fill(mSecretKey, (byte) 0);
         }
+
+        /** A copy that a background task can wipe without touching the session's keys. */
+        public KeyPair copy() {
+            return new KeyPair(mPublicKey.clone(), mSecretKey.clone());
+        }
     }
 
     private static HPKE newHpke() {
@@ -242,7 +247,7 @@ public final class CifraCrypto {
         final String body = matcher.group(1).replaceAll("[^A-Za-z0-9+/=]", "");
         try {
             final byte[] wire = Base64.decode(body);
-            return hasValidHeader(wire) ? wire : null;
+            return hasValidHeader(wire) || Ratchet.isRatchetMessage(wire) ? wire : null;
         } catch (RuntimeException e) {
             return null;
         }
