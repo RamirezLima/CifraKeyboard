@@ -22,6 +22,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.ListPreference;
@@ -38,6 +39,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -45,7 +47,7 @@ import rkr.simplekeyboard.inputmethod.R;
 
 /**
  * "Keys and contacts" settings screen: identities derived from BIP39 words, contacts' public
- * keys, and erasing everything.
+ * keys, the cold phone, and erasing everything.
  */
 public final class CryptoSettingsFragment extends PreferenceFragment {
     private VaultStore mStore;
@@ -133,6 +135,8 @@ public final class CryptoSettingsFragment extends PreferenceFragment {
         screen.addPreference(keystorePreference());
         // Erasing never needs authentication: destroying the keys must always be possible.
         screen.addPreference(wipeAction());
+        // Nothing secret either, and the phone with internet may hold no keys at all.
+        addColdCategory(screen);
     }
 
     private void rebuild() {
@@ -196,7 +200,38 @@ public final class CryptoSettingsFragment extends PreferenceFragment {
         });
         contacts.addPreference(addContact);
 
+        addColdCategory(screen);
         addSecurityCategory(screen);
+    }
+
+    private void addColdCategory(final PreferenceScreen screen) {
+        final PreferenceCategory cold = category(screen, R.string.cifra_cold);
+        final SwitchPreference qr = new SwitchPreference(getActivity());
+        qr.setKey(SecureKeyboard.PREF_QR);
+        qr.setDefaultValue(false);
+        qr.setTitle(R.string.cifra_qr_switch_title);
+        qr.setSummaryOff(R.string.cifra_qr_switch_summary_off);
+        qr.setSummaryOn(R.string.cifra_qr_switch_summary_on);
+        cold.addPreference(qr);
+        final Preference howTo = action(R.string.cifra_cold_howto_title,
+                R.string.cifra_cold_howto_summary);
+        howTo.setOnPreferenceClickListener(p -> {
+            SecureDialogs.show(new AlertDialog.Builder(getActivity())
+                    .setTitle(R.string.cifra_cold_howto_title)
+                    .setMessage(getString(R.string.cifra_cold_howto_text,
+                            QrCodes.MAX_PLAINTEXT_BYTES))
+                    .setPositiveButton(android.R.string.ok, null));
+            return true;
+        });
+        cold.addPreference(howTo);
+        final Preference write = action(R.string.cifra_cold_write_title,
+                R.string.cifra_cold_write_summary);
+        write.setOnPreferenceClickListener(p -> {
+            mOpeningOwnScreen = true;
+            startActivity(new Intent(getActivity(), ColdWriteActivity.class));
+            return true;
+        });
+        cold.addPreference(write);
     }
 
     private void addSecurityCategory(final PreferenceScreen screen) {
@@ -346,7 +381,7 @@ public final class CryptoSettingsFragment extends PreferenceFragment {
         SecureDialogs.show(new AlertDialog.Builder(getActivity())
                 .setTitle(identity.mName)
                 .setView(keyInfoView(identity.getEncodedPublicKey(), identity.getFingerprint(),
-                        null))
+                        getString(R.string.cifra_qr_key_hint), true))
                 .setPositiveButton(R.string.cifra_share_public_key, (d, w) -> share(identity))
                 .setNeutralButton(R.string.cifra_copy_public_key,
                         (d, w) -> copy(identity.getEncodedPublicKey()))
@@ -383,7 +418,7 @@ public final class CryptoSettingsFragment extends PreferenceFragment {
         SecureDialogs.show(new AlertDialog.Builder(getActivity())
                 .setTitle(contact.mName)
                 .setView(keyInfoView(contact.getEncodedPublicKey(), contact.getFingerprint(),
-                        getString(R.string.cifra_verify_hint, contact.mName)))
+                        getString(R.string.cifra_verify_hint, contact.mName), false))
                 .setPositiveButton(contact.mVerified ? R.string.cifra_mark_unverified
                         : R.string.cifra_mark_verified,
                         (d, w) -> run(() -> mStore.setContactVerified(contact.mId,
@@ -447,11 +482,29 @@ public final class CryptoSettingsFragment extends PreferenceFragment {
             }
         }
 
-        final AlertDialog dialog = SecureDialogs.show(new AlertDialog.Builder(getActivity())
+        final boolean hasCamera = getActivity().getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_CAMERA_ANY);
+        final AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
                 .setTitle(R.string.cifra_add_contact)
                 .setView(view)
                 .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(R.string.cifra_add_contact, null));
+                .setPositiveButton(R.string.cifra_add_contact, null);
+        if (hasCamera) {
+            builder.setNeutralButton(R.string.cifra_scan_qr, null);
+        }
+        final AlertDialog dialog = SecureDialogs.show(builder);
+        if (hasCamera) {
+            // Set after showing, so the button does not close the dialog.
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
+                mOpeningOwnScreen = true;
+                QrScanActivity.request(getActivity(), QrScanActivity.KIND_KEY, false, content -> {
+                    final byte[] publicKey = QrCodes.publicKey(content);
+                    if (publicKey != null && dialog.isShowing()) {
+                        key.setText(CifraCrypto.encodePublicKey(publicKey));
+                    }
+                });
+            });
+        }
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             final String contactName = name.getText().toString().trim();
             final byte[] publicKey = CifraCrypto.findPublicKey(key.getText());
@@ -475,10 +528,17 @@ public final class CryptoSettingsFragment extends PreferenceFragment {
         });
     }
 
+    /** @param showQr shows the key as a QR code, for the other person to scan. */
     private View keyInfoView(final String encodedKey, final String fingerprint,
-            final String hint) {
+            final String hint, final boolean showQr) {
         final View view = LayoutInflater.from(getActivity())
                 .inflate(R.layout.cifra_dialog_key_info, null);
+        if (showQr) {
+            final ImageView qr = view.findViewById(R.id.cifra_key_qr);
+            qr.setImageDrawable(QrViews.drawable(getResources(),
+                    QrCodes.encodeText(encodedKey)));
+            qr.setVisibility(View.VISIBLE);
+        }
         ((TextView) view.findViewById(R.id.cifra_key_value)).setText(encodedKey);
         ((TextView) view.findViewById(R.id.cifra_key_fingerprint)).setText(fingerprint);
         final TextView hintView = view.findViewById(R.id.cifra_key_hint);

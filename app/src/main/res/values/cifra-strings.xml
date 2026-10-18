@@ -86,8 +86,8 @@
 
     <!-- About: privacy and license, shown in the app -->
     <string name="cifra_license_summary">A fork of Simple Keyboard · Apache License 2.0</string>
-    <string name="cifra_license_text">Cifra Keyboard is a fork of Simple Keyboard (github.com/rkkr/simple-keyboard) by Raimondas Rimkus and contributors, which is based on the LatinIME keyboard of the Android Open Source Project. It is not affiliated with or endorsed by the Simple Keyboard authors.\n\nLicensed under the Apache License, Version 2.0 (apache.org/licenses/LICENSE-2.0). Distributed on an \"AS IS\" basis, without warranties or conditions of any kind.\n\nThird-party components:\n• Bouncy Castle Crypto APIs, MIT License\n• BIP39 English wordlist (bitcoin/bips), MIT License\n• Material icons, Apache License 2.0</string>
-    <string name="cifra_privacy_text">Cifra Keyboard has no internet permission and sends nothing anywhere: no analytics, no crash reports, no ads.\n\nOnly on this device, it keeps:\n• your identities: name, public key and the private key sealed by the Android Keystore;\n• your contacts: name and public key;\n• your ratchet conversations: the keys in use, the keys of messages that have not arrived yet (for up to 7 days) and, if \"Read messages again\" is on, the keys of messages already read until that time runs out. All of it is sealed by the Android Keystore. While the key of a message exists, that encrypted message can be opened again on this device;\n• the keyboard settings and the result of the check in \"Key protection on this device\".\n\nIt never stores your BIP39 words, your passphrase, or the text of the messages you write or decrypt. It reads the clipboard only on this device, to find encrypted messages.\n\nBackups are disabled. \"Erase all keys\" deletes identities, contacts and conversations; uninstalling the app deletes everything.</string>
+    <string name="cifra_license_text">Cifra Keyboard is a fork of Simple Keyboard (github.com/rkkr/simple-keyboard) by Raimondas Rimkus and contributors, which is based on the LatinIME keyboard of the Android Open Source Project. It is not affiliated with or endorsed by the Simple Keyboard authors.\n\nLicensed under the Apache License, Version 2.0 (apache.org/licenses/LICENSE-2.0). Distributed on an \"AS IS\" basis, without warranties or conditions of any kind.\n\nThird-party components:\n• Bouncy Castle Crypto APIs, MIT License\n• BIP39 English wordlist (bitcoin/bips), MIT License\n• ZXing core (QR codes), Apache License 2.0\n• Material icons, Apache License 2.0</string>
+    <string name="cifra_privacy_text">Cifra Keyboard has no internet permission and sends nothing anywhere: no analytics, no crash reports, no ads.\n\nOnly on this device, it keeps:\n• your identities: name, public key and the private key sealed by the Android Keystore;\n• your contacts: name and public key;\n• your ratchet conversations: the keys in use, the keys of messages that have not arrived yet (for up to 7 days) and, if \"Read messages again\" is on, the keys of messages already read until that time runs out. All of it is sealed by the Android Keystore. While the key of a message exists, that encrypted message can be opened again on this device;\n• the keyboard settings and the result of the check in \"Key protection on this device\".\n\nIt never stores your BIP39 words, your passphrase, or the text of the messages you write or decrypt. It reads the clipboard only on this device, to find encrypted messages.\n\nIf you turn on the QR code button, the camera is only used while a code is being read: frames are looked at in memory, one at a time, and never stored.\n\nBackups are disabled. \"Erase all keys\" deletes identities, contacts and conversations; uninstalling the app deletes everything.</string>
 
     <!-- Identity setup -->
     <string name="cifra_identity_setup_title">New identity</string>
@@ -175,4 +175,45 @@
     <string name="cifra_lock_content_description">Secure mode</string>
     <string name="cifra_clipboard_content_description">Read the encrypted message in the clipboard</string>
     <string name="cifra_chars">%1$d characters</string>
+    <!-- Cold phone: QR codes -->
+    <string name="cifra_encrypted_message">Encrypted message</string>
+    <string name="cifra_qr_content_description">QR codes</string>
+    <string name="cifra_qr_menu">QR codes</string>
+    <string name="cifra_qr_scan">Read a QR code</string>
+    <string name="cifra_qr_scan_detail">An encrypted message shown by another phone</string>
+    <string name="cifra_qr_show_clipboard">Show the copied message as a QR code</string>
+    <string name="cifra_qr_show_clipboard_detail">For the cold phone to read</string>
+    <string name="cifra_qr_show_preview">Show as a QR code</string>
+    <string name="cifra_qr_show_preview_detail">For the phone with internet to read and send. Then the draft is erased, as when inserting.</string>
+    <string name="cifra_qr_too_big">Too long for a QR code: up to <xliff:g id="LIMIT" example="764">%d</xliff:g> letters, and accented letters count as two.</string>
+    <string name="cifra_qr_result_title">Encrypted message from the QR code</string>
+    <string name="cifra_qr_result_info_cold">Read it here if it is for you, or insert it in the app to send it.</string>
+    <string name="cifra_qr_result_info_hot">Insert it in the app to send it. This phone has no keys to read it.</string>
+    <string name="cifra_qr_read_here">Read here</string>
+    <string name="cifra_qr_show_button">Show QR code</string>
+    <string name="cifra_preview_info_qr">Only <xliff:g id="NAME" example="Maria">%s</xliff:g> can read it. Show the QR code to the phone with internet, which sends it.</string>
+    <string name="cifra_qr_not_message">This QR code is not a Cifra message.</string>
+    <string name="cifra_qr_not_key">This QR code is not a Cifra public key.</string>
+    <string name="cifra_qr_scan_title">Read a QR code</string>
+    <string name="cifra_qr_scan_key_title">Read a public key</string>
+    <string name="cifra_qr_scan_hint">Point at the QR code on the other phone.</string>
+    <string name="cifra_qr_no_camera">Cifra needs the camera to read QR codes. Allow it in the Android settings, under Apps, Cifra Keyboard, Permissions.</string>
+    <string name="cifra_qr_camera_error">Could not open the camera.</string>
+    <string name="cifra_qr_online_warning">This phone holds keys and is not in airplane mode. A cold phone should always stay offline: airplane mode on, Wi-Fi and Bluetooth off.</string>
+    <string name="cifra_qr_show_title">Encrypted message</string>
+    <string name="cifra_qr_show_hint">Read it with Cifra on the other phone. This code holds only encrypted text.</string>
+    <string name="cifra_qr_image_description">QR code of the encrypted message</string>
+    <string name="cifra_qr_key_description">QR code of the public key</string>
+    <string name="cifra_qr_key_hint">To add you as a contact, the other person can read this code with Cifra.</string>
+    <string name="cifra_scan_qr">Read QR code</string>
+    <string name="cifra_cold">Cold phone (QR codes)</string>
+    <string name="cifra_qr_switch_title">QR code button on the keyboard</string>
+    <string name="cifra_qr_switch_summary_off">To use Cifra with a cold phone, which never goes online and holds the keys.</string>
+    <string name="cifra_qr_switch_summary_on">Reads and shows encrypted messages between this phone and a cold phone. The camera is only used while a code is being read.</string>
+    <string name="cifra_cold_howto_title">How to use a cold phone</string>
+    <string name="cifra_cold_howto_summary">A phone that never goes online holds the keys; the one with internet only carries encrypted text.</string>
+    <string name="cifra_cold_howto_text">The cold phone holds your identities and contacts and never goes online. The phone with internet keeps no keys: it only carries encrypted text.\n\nTo send: on the cold phone, open the writing area, tap the lock, write and encrypt, then tap \"Show as a QR code\". On the phone with internet, tap the QR button on the keyboard, read the code and insert the message in the chat.\n\nTo read: on the phone with internet, copy the encrypted message, tap the QR button and show it as a QR code. On the cold phone, open the writing area, tap the QR button and read the code. The message only appears on the cold phone.\n\nNever type a secret on the phone with internet. Keep the cold phone in airplane mode, with Wi-Fi and Bluetooth off, and turn on the QR code button on the phone with internet; in the writing area of the cold phone it is always there. A QR code holds up to <xliff:g id="LIMIT" example="764">%d</xliff:g> letters.</string>
+    <string name="cifra_cold_write_title">Writing area</string>
+    <string name="cifra_cold_write_summary">A text field to open the keyboard on the cold phone. Nothing typed here is kept.</string>
+    <string name="cifra_cold_write_hint">Tap the lock on the keyboard to write in secure mode.</string>
 </resources>

@@ -31,6 +31,16 @@
         android:textSize="18sp"
         android:textStyle="bold" />
 
+    <ImageView
+        android:id="@+id/cifra_key_qr"
+        android:layout_width="220dp"
+        android:layout_height="220dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="12dp"
+        android:contentDescription="@string/cifra_qr_key_description"
+        android:scaleType="fitCenter"
+        android:visibility="gone" />
+
     <TextView
         android:id="@+id/cifra_key_hint"
         android:layout_width="match_parent"

@@ -22,6 +22,12 @@
     <!-- Fingerprint or face (strong class only) as an alternative to the screen lock when
          opening the vault. -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Reading QR codes from a cold phone. Asked for the first time a code is read; frames
+         are only decoded in memory. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature
+        android:name="android.hardware.camera.any"
+        android:required="false" />
     <!-- The keyboard never talks to the network. Strip the permission even if a library asks. -->
     <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
@@ -78,6 +84,25 @@
             android:exported="false"
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <activity
+            android:name=".crypto.ColdWriteActivity"
+            android:exported="false"
+            android:label="@string/cifra_cold_write_title"
+            android:theme="@style/platformSettingsTheme"
+            android:windowSoftInputMode="stateAlwaysVisible|adjustResize" />
+
+        <!-- Reads QR codes from a cold phone. Opened by the keyboard inside another app, it
+             needs a task of its own, like AuthActivity; from the writing area it opens in the
+             app's task. Codes are shown in the keyboard itself, not in a screen. -->
+        <activity
+            android:name=".crypto.QrScanActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Material.NoActionBar" />
 
         <receiver
             android:name=".latin.SystemBroadcastReceiver"

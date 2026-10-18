@@ -13,6 +13,7 @@ O Cifra Keyboard cifra suas mensagens dentro do teclado, antes de qualquer app r
 
 <b>Segurança:</b>
 
+* Celular frio opcional: as chaves ficam num segundo celular sempre offline, e as mensagens cifradas passam por QR code
 * Sem permissão de internet, sem backup
 * Chaves privadas lacradas pelo Android Keystore (StrongBox quando disponível)
 * Capturas e gravação de tela bloqueadas no teclado

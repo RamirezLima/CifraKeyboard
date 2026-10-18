@@ -7,8 +7,9 @@ segurança não depende da criptografia de ponta a ponta (ou da falta dela) dess
 ## Premissas
 
 - **Sem rede.** O APK não declara `INTERNET` (o manifesto remove a permissão mesmo que uma
-  biblioteca a peça). As permissões são `VIBRATE` e `USE_BIOMETRIC` (digital ou rosto como
-  alternativa ao bloqueio de tela para abrir o cofre).
+  biblioteca a peça). As permissões são `VIBRATE`, `USE_BIOMETRIC` (digital ou rosto como
+  alternativa ao bloqueio de tela para abrir o cofre) e `CAMERA`, pedida só na primeira leitura
+  de um QR code (veja "Celular frio").
 - **Sem capturas.** A janela do teclado, as configurações, a tela de identidade e todos os
   diálogos usam `FLAG_SECURE`: não aparecem em screenshots, gravações, espelhamento, na prévia de
   recentes nem para o assistente. Diálogos são janelas próprias e não herdam a flag da tela, então
@@ -168,6 +169,44 @@ Propriedades e limites:
    continuam marcadas como `accessibilityDataSensitive`, e só ferramentas de acessibilidade
    reconhecidas pelo sistema as leem; antes do Android 14, qualquer serviço instalado lê.
 
+## Celular frio (QR codes)
+
+Opcional, desligado por padrão ("Botão de QR code no teclado"). As identidades ficam num celular
+que nunca fica online; o celular com internet não guarda chaves e só transporta texto cifrado. Na
+"Área de escrita" do celular frio as opções de QR aparecem mesmo com o botão desligado, e na
+prévia "Mostrar QR code" substitui "Inserir no app". Ali o limite de tamanho é conferido antes de
+cifrar, para uma mensagem que não cabe num QR code não gastar uma chave da catraca.
+
+- **O texto aberto nunca passa pelo celular com internet.** A mensagem é escrita e cifrada no
+  celular frio, e lida e decifrada nele também. Diferente do PSBT do Bitcoin, onde o celular
+  online monta uma transação que é pública de qualquer jeito, aqui o conteúdo é o próprio
+  segredo: digitá-lo no celular online o exporia a quem controlar esse aparelho, e um QR code com
+  texto aberto pode ser lido por qualquer câmera por perto. Por isso só passam por QR o texto
+  cifrado e as chaves públicas.
+- **Enviar:** no celular frio, a "Área de escrita" é só um campo de texto para abrir o teclado.
+  No modo seguro, depois de cifrar, "Mostrar QR code" mostra a mensagem no próprio teclado, que
+  cresce para o código caber, com brilho máximo enquanto ele aparece. O rascunho é apagado como em
+  "Inserir no app". No celular com internet, o botão de QR do teclado lê o código e insere a
+  mensagem na conversa.
+- **Sem janelas separadas:** os códigos aparecem no teclado, não numa tela própria. A câmera é
+  uma tela, porque o Android não deixa um teclado usá-la sozinho: na área de escrita ela abre
+  dentro do app; dentro de outro app (o de conversa, no celular com internet) ela precisa de uma
+  tarefa separada, como a tela de autenticação.
+- **Ler:** o celular com internet mostra como QR code a mensagem cifrada copiada; o celular frio
+  lê e decifra com o fluxo normal, que pede a autenticação do cofre.
+- **Formato:** a mensagem vai em binário (o mesmo conteúdo da armadura, sem Base64), num único QR
+  code de até versão 20 (97 × 97 módulos), com correção de erro L. Cabem 858 bytes: mensagens de
+  até 764 bytes de texto, nos dois formatos. Chaves públicas vão como texto `cifra1...`.
+- **Câmera:** usa a API nativa (Camera2) e a ZXing (Java puro), sem bibliotecas de câmera nem
+  serviços do Google. Só o quadrado central de cada quadro é analisado, na memória, e nada é
+  gravado. A tela da câmera usa `FLAG_SECURE`, como a janela do teclado.
+- **Modo avião:** se um celular com identidades mostrar ou ler um QR code fora do modo avião, o
+  teclado ou a câmera avisa. O app não vê Wi-Fi nem Bluetooth: isso exigiria a permissão de estado da rede, que o
+  Cifra remove de propósito.
+- **Contatos por QR:** a tela da identidade mostra a chave pública como QR code, e "Adicionar
+  contato" pode ler o código do outro celular. Ler pessoalmente o código da outra pessoa
+  equivale a conferir a impressão digital.
+
 ## Limites conhecidos
 
 - **Aparelho comprometido:** root, malware com privilégios ou um teclado de terceiros usado
@@ -190,6 +229,10 @@ Propriedades e limites:
   opção num Android anterior ao 14, qualquer serviço de acessibilidade lê o modo seguro.
 - **Metadados do sistema:** o Android registra quando o teclado abre e fecha, em qual app, e cada
   vez que o Cifra lê a área de transferência (data e hora, sem conteúdo). O app não controla isso.
+- **Celular frio:** só protege enquanto ficar realmente offline, e sem outros apps que possam
+  ler a tela ou o teclado. Ler um QR code é ler dados de fora: a ZXing decodifica imagens da
+  câmera, e o Cifra só aceita o resultado se for uma mensagem ou chave válida. Mensagens maiores
+  que um QR code (764 bytes) ainda não têm uma sequência de códigos.
 - **Build de debug:** é depurável. Por USB, alguém pode rodar código como o app e pedir ao Keystore
   que abra o cofre. Para uso real, só o build de release.
 
@@ -200,4 +243,6 @@ BIP173, cifrar e decifrar, remetente ou destinatário errado, adulteração, pad
 mutilada por apps de chat, chaves públicas de ordem baixa, o formato da impressão digital e, na
 catraca: conversa nos dois sentidos, mensagens fora de ordem e perdidas, limite de perdas,
 releitura com e sem prazo, primeira mensagem repetida, sigilo futuro com estado roubado,
-aparelho novo, início simultâneo dos dois lados e o estado salvo e restaurado no cofre.
+aparelho novo, início simultâneo dos dois lados e o estado salvo e restaurado no cofre. Nos QR
+codes: ida e volta do maior conteúdo na versão 20, o limite de tamanho, a mensagem mais longa nos
+dois formatos, armadura em texto, chave pública e códigos que não são do Cifra.

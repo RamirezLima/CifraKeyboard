@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A text field for the keyboard on the cold phone. Nothing typed here is kept. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/cifra_cold_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:labelFor="@+id/cifra_cold_text"
+        android:text="@string/cifra_cold_write_hint"
+        android:textSize="15sp" />
+
+    <EditText
+        android:id="@id/cifra_cold_text"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="top|start"
+        android:importantForAutofill="no"
+        android:imeOptions="flagNoPersonalizedLearning"
+        android:inputType="textMultiLine|textNoSuggestions" />
+</LinearLayout>

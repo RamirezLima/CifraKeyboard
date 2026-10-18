@@ -17,6 +17,9 @@ Somente neste aparelho, ele guarda:
 Ele nunca guarda suas palavras BIP39, sua passphrase nem o texto das mensagens que você escreve ou
 decifra. Ele lê a área de transferência só no aparelho, para encontrar mensagens cifradas.
 
+Se você ligar o botão de QR code (para usar um celular frio), a câmera é usada só enquanto um
+código é lido: as imagens são analisadas na memória, uma por vez, e nunca gravadas.
+
 O backup do Android está desligado. "Apagar todas as chaves" remove identidades, contatos e
 conversas; desinstalar o app remove tudo.
 
@@ -38,8 +41,10 @@ Only on this device, it keeps:
 - **the keyboard settings** and the result of the check in "Key protection on this device".
 
 It never stores your BIP39 words, your passphrase, or the text of the messages you write or
-decrypt. It reads
-the clipboard only on this device, to find encrypted messages.
+decrypt. It reads the clipboard only on this device, to find encrypted messages.
+
+If you turn on the QR code button (to use a cold phone), the camera is only used while a code is
+being read: frames are looked at in memory, one at a time, and never stored.
 
 Android backup is disabled. "Erase all keys" deletes identities, contacts and conversations;
 uninstalling the app deletes everything.

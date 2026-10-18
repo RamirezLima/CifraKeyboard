@@ -38,12 +38,15 @@ import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.ReplacementSpan;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
@@ -93,6 +96,13 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
 
     public static boolean readScreenReaderAllowed(final SharedPreferences prefs) {
         return prefs.getBoolean(PREF_SCREEN_READER, false);
+    }
+
+    /** Shows the QR code button, for use with a cold phone. Off by default. */
+    public static final String PREF_QR = "pref_cifra_qr";
+
+    public static boolean readQrEnabled(final SharedPreferences prefs) {
+        return prefs.getBoolean(PREF_QR, false);
     }
 
     /**
@@ -148,6 +158,9 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         PREVIEW,
         READ,
         MESSAGE,
+        QR_MENU,
+        QR_RESULT,
+        QR_SHOW,
     }
 
     private final LatinIME mIme;
@@ -168,6 +181,7 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     private View mKeyboardView;
     private ImageView mLockButton;
     private TextView mStatus;
+    private ImageView mQrButton;
     private TextView mClipboardButton;
     private TextView mEncryptButton;
     private TextView mComposeText;
@@ -181,6 +195,9 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     private View mOverlayButtons;
     private TextView mOverlayPrimary;
     private TextView mOverlaySecondary;
+    private ImageView mOverlayQr;
+    /** The keyboard window is at full brightness and kept on, for a QR code. */
+    private boolean mQrScreen;
 
     private Mode mMode = Mode.IDLE;
     /** True while the keys are captured into {@link #mDraft}, including under an overlay. */
@@ -244,6 +261,7 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         mKeyboardView = inputView.findViewById(R.id.keyboard_view);
         mLockButton = inputView.findViewById(R.id.cifra_lock_button);
         mStatus = inputView.findViewById(R.id.cifra_status);
+        mQrButton = inputView.findViewById(R.id.cifra_qr_button);
         mClipboardButton = inputView.findViewById(R.id.cifra_clipboard_button);
         mEncryptButton = inputView.findViewById(R.id.cifra_encrypt_button);
         mComposeText = inputView.findViewById(R.id.cifra_compose_text);
@@ -256,8 +274,10 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         mOverlayButtons = inputView.findViewById(R.id.cifra_overlay_buttons);
         mOverlayPrimary = inputView.findViewById(R.id.cifra_overlay_primary);
         mOverlaySecondary = inputView.findViewById(R.id.cifra_overlay_secondary);
+        mOverlayQr = inputView.findViewById(R.id.cifra_overlay_qr);
 
         mLockButton.setOnClickListener(v -> onLockPressed());
+        mQrButton.setOnClickListener(v -> onQrPressed());
         mClipboardButton.setOnClickListener(v -> onClipboardPressed());
         mEncryptButton.setOnClickListener(v -> onEncryptPressed());
         inputView.findViewById(R.id.cifra_overlay_close).setOnClickListener(v -> closeOverlay());
@@ -717,9 +737,16 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
             return;
         }
         final String plaintext = mDraft.toString();
-        if (plaintext.getBytes(StandardCharsets.UTF_8).length > CifraCrypto.MAX_PLAINTEXT_BYTES) {
+        final int length = plaintext.getBytes(StandardCharsets.UTF_8).length;
+        if (length > CifraCrypto.MAX_PLAINTEXT_BYTES) {
             showMessage(mIme.getString(R.string.cifra_bar_encrypt),
                     mIme.getString(R.string.cifra_message_too_long));
+            return;
+        }
+        if (length > QrCodes.MAX_PLAINTEXT_BYTES && inWritingArea()) {
+            // Checked before encrypting, so a message that cannot leave does not use up a key.
+            showMessage(mIme.getString(R.string.cifra_bar_encrypt),
+                    mIme.getString(R.string.cifra_qr_too_big, QrCodes.MAX_PLAINTEXT_BYTES));
             return;
         }
         final CifraCrypto.KeyPair senderKeys = mSessionKeys.get(sender.mId);
@@ -765,21 +792,100 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     }
 
     private void showPreview(final Vault.Contact recipient, final String note) {
-        final String info = mIme.getString(R.string.cifra_preview_info, recipient.mName);
+        final byte[] wire = CifraCrypto.dearmor(mPendingCiphertext);
+        final boolean fits = wire != null && QrCodes.fits(wire);
+        final boolean writingArea = fits && inWritingArea();
+        final String info = mIme.getString(writingArea ? R.string.cifra_preview_info_qr
+                : R.string.cifra_preview_info, recipient.mName);
         showOverlay(Mode.PREVIEW, mIme.getString(R.string.cifra_preview_title, recipient.mName),
                 note == null ? info : info + " " + note);
         setBody(mPendingCiphertext, true);
-        setButtons(mIme.getString(R.string.cifra_edit), () -> {
+        final Runnable edit = () -> {
             mPendingCiphertext = null;
             closeOverlay();
-        }, mIme.getString(R.string.cifra_insert), this::insertCiphertext);
+        };
+        if (writingArea) {
+            // The cold phone sends by QR code; inserting into its own writing area is pointless.
+            setButtons(mIme.getString(R.string.cifra_edit), edit,
+                    mIme.getString(R.string.cifra_qr_show_button), () -> showPendingAsQr(wire));
+            return;
+        }
+        setButtons(mIme.getString(R.string.cifra_edit), edit,
+                mIme.getString(R.string.cifra_insert), this::insertCiphertext);
+        if (qrEnabled()) {
+            if (fits) {
+                addRow(mIme.getString(R.string.cifra_qr_show_preview),
+                        mIme.getString(R.string.cifra_qr_show_preview_detail),
+                        () -> showPendingAsQr(wire));
+            } else {
+                addRow(mIme.getString(R.string.cifra_qr_show_preview),
+                        mIme.getString(R.string.cifra_qr_too_big, QrCodes.MAX_PLAINTEXT_BYTES),
+                        () -> { });
+            }
+        }
+    }
+
+    /** The cold phone's way of sending: the phone with internet reads the code and sends it. */
+    private void showPendingAsQr(final byte[] wire) {
+        mPendingCiphertext = null;
+        wipeDraft();
+        showQr(wire);
+    }
+
+    /**
+     * Shows a message as a QR code in the keyboard itself, which grows for it, instead of in a
+     * screen of its own that Android would open as a separate window.
+     */
+    private void showQr(final byte[] wire) {
+        final String hint = mIme.getString(R.string.cifra_qr_show_hint);
+        showOverlay(Mode.QR_SHOW, mIme.getString(R.string.cifra_qr_show_title),
+                QrViews.shouldWarnOnline(mIme, holdsKeys())
+                        ? mIme.getString(R.string.cifra_qr_online_warning) + " " + hint : hint);
+        if (mOverlay == null) {
+            return;
+        }
+        mOverlayScroll.setVisibility(View.GONE);
+        mOverlayQr.setImageDrawable(QrViews.drawable(mIme.getResources(),
+                QrCodes.encodeMessage(wire)));
+        mOverlayQr.setVisibility(View.VISIBLE);
+        setButtons(null, null, mIme.getString(R.string.cifra_close), this::closeOverlay);
+        setQrScreen(true);
+    }
+
+    /** Full brightness and no screen timeout while a QR code is on screen. */
+    private void setQrScreen(final boolean on) {
+        if (on == mQrScreen || mIme.getWindow() == null) {
+            return;
+        }
+        final Window window = mIme.getWindow().getWindow();
+        if (window == null) {
+            return;
+        }
+        mQrScreen = on;
+        final WindowManager.LayoutParams params = window.getAttributes();
+        params.screenBrightness = on ? WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
+                : WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
+        window.setAttributes(params);
+        if (on) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
     }
 
     private void insertCiphertext() {
         if (mPendingCiphertext == null) {
             return;
         }
-        String text = mPendingCiphertext;
+        commitArmored(mPendingCiphertext);
+        mPendingCiphertext = null;
+        wipeDraft();
+        // Stay in secure mode with the same recipient: fail closed for the next message.
+        closeOverlay();
+    }
+
+    private void commitArmored(final String armored) {
+        String text = armored;
         final EditorInfo editorInfo = mIme.getCurrentInputEditorInfo();
         if (editorInfo != null && (editorInfo.inputType & InputType.TYPE_MASK_CLASS)
                 == InputType.TYPE_CLASS_TEXT
@@ -788,10 +894,96 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
             text = text.replace('\n', ' ');
         }
         mIme.commitSecureText(text);
-        mPendingCiphertext = null;
-        wipeDraft();
-        // Stay in secure mode with the same recipient: fail closed for the next message.
+    }
+
+    // QR codes, for a cold phone that holds the keys and never goes online
+
+    private void onQrPressed() {
+        showOverlay(Mode.QR_MENU, mIme.getString(R.string.cifra_qr_menu), null);
+        addRow(mIme.getString(R.string.cifra_qr_scan),
+                mIme.getString(R.string.cifra_qr_scan_detail), this::scanQr);
+        if (mClipboardHasMessage) {
+            addRow(mIme.getString(R.string.cifra_qr_show_clipboard),
+                    mIme.getString(R.string.cifra_qr_show_clipboard_detail),
+                    this::showClipboardAsQr);
+        }
+    }
+
+    private void scanQr() {
         closeOverlay();
+        final boolean holdsKeys = holdsKeys();
+        if (inWritingArea() && ColdWriteActivity.scanHere(QrScanActivity.KIND_MESSAGE, holdsKeys,
+                this::onQrScanned)) {
+            return;
+        }
+        // In another app, a keyboard can only open the camera in a task of its own.
+        QrScanActivity.request(mIme, QrScanActivity.KIND_MESSAGE, holdsKeys, this::onQrScanned);
+    }
+
+    /**
+     * Arrives while the keyboard is hidden behind the camera; the overlay shows when the
+     * keyboard comes back.
+     */
+    private void onQrScanned(final QrCodes.Content content) {
+        final byte[] wire = QrCodes.messageWire(content);
+        if (wire == null) {
+            return; // Cancelled: the camera only returns Cifra messages.
+        }
+        final String armored = CifraCrypto.armor(wire);
+        final boolean holdsKeys = holdsKeys();
+        showOverlay(Mode.QR_RESULT, mIme.getString(R.string.cifra_qr_result_title),
+                mIme.getString(holdsKeys ? R.string.cifra_qr_result_info_cold
+                        : R.string.cifra_qr_result_info_hot));
+        setBody(armored, true);
+        final Runnable insert = () -> {
+            commitArmored(armored);
+            closeOverlay();
+        };
+        if (holdsKeys) {
+            setButtons(mIme.getString(R.string.cifra_insert), insert,
+                    mIme.getString(R.string.cifra_qr_read_here),
+                    () -> unlockThen(() -> chooseIdentityAndDecrypt(wire)));
+        } else {
+            setButtons(mIme.getString(R.string.cifra_close), this::closeOverlay,
+                    mIme.getString(R.string.cifra_insert), insert);
+        }
+    }
+
+    private void showClipboardAsQr() {
+        final byte[] wire = CifraCrypto.dearmor(readClipboardText());
+        if (wire == null) {
+            showMessage(mIme.getString(R.string.cifra_qr_menu),
+                    mIme.getString(R.string.cifra_clipboard_invalid));
+            return;
+        }
+        if (!QrCodes.fits(wire)) {
+            showMessage(mIme.getString(R.string.cifra_qr_menu),
+                    mIme.getString(R.string.cifra_qr_too_big, QrCodes.MAX_PLAINTEXT_BYTES));
+            return;
+        }
+        showQr(wire);
+    }
+
+    /** The cold phone's writing area, where QR codes are the whole point. */
+    private boolean inWritingArea() {
+        final EditorInfo editorInfo = mIme.getCurrentInputEditorInfo();
+        return editorInfo != null && mIme.getPackageName().equals(editorInfo.packageName)
+                && ColdWriteActivity.PRIVATE_IME_OPTION.equals(editorInfo.privateImeOptions);
+    }
+
+    /** The setting turns QR codes on everywhere; the writing area always has them. */
+    private boolean qrEnabled() {
+        return inWritingArea()
+                || readQrEnabled(PreferenceManagerCompat.getDeviceSharedPreferences(mIme));
+    }
+
+    /** A phone with identities is the one that should be a cold phone, always offline. */
+    private boolean holdsKeys() {
+        try {
+            return !mStore.getVault().getIdentities().isEmpty();
+        } catch (VaultStore.VaultException e) {
+            return false;
+        }
     }
 
     private void onClipboardPressed() {
@@ -857,15 +1049,15 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
                     showRead(result);
                     break;
                 case ALREADY_READ:
-                    showMessage(mIme.getString(R.string.cifra_bar_clipboard_status),
+                    showMessage(mIme.getString(R.string.cifra_encrypted_message),
                             mIme.getString(R.string.cifra_already_read));
                     break;
                 case TOO_FAR:
-                    showMessage(mIme.getString(R.string.cifra_bar_clipboard_status),
+                    showMessage(mIme.getString(R.string.cifra_encrypted_message),
                             mIme.getString(R.string.cifra_too_far));
                     break;
                 default:
-                    showMessage(mIme.getString(R.string.cifra_bar_clipboard_status),
+                    showMessage(mIme.getString(R.string.cifra_encrypted_message),
                             mIme.getString(R.string.cifra_decrypt_failed));
                     break;
             }
@@ -1020,6 +1212,7 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         clearBody();
         mOverlayList.removeAllViews();
         mOverlayButtons.setVisibility(View.GONE);
+        hideQr();
         mOverlay.findViewById(R.id.cifra_overlay_close).setVisibility(View.VISIBLE);
         mOverlayScroll.scrollTo(0, 0);
         syncOverlayHeight();
@@ -1044,7 +1237,15 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         }
         clearBody();
         mOverlayList.removeAllViews();
+        hideQr();
         mOverlay.setVisibility(View.GONE);
+    }
+
+    private void hideQr() {
+        mOverlayQr.setImageDrawable(null);
+        mOverlayQr.setVisibility(View.GONE);
+        mOverlayScroll.setVisibility(View.VISIBLE);
+        setQrScreen(false);
     }
 
     private void clearBody() {
@@ -1093,9 +1294,18 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         if (mOverlay == null || mKeyboardView == null || mKeyboardView.getHeight() == 0) {
             return;
         }
+        int height = mKeyboardView.getHeight();
+        if (mMode == Mode.QR_SHOW) {
+            // Taller than the keys: a camera needs the code big. The app above shrinks for as
+            // long as the code is shown.
+            final DisplayMetrics metrics = mIme.getResources().getDisplayMetrics();
+            final int chrome = Math.round(150 * metrics.density);
+            height = Math.max(height, Math.min(metrics.widthPixels + chrome,
+                    metrics.heightPixels * 7 / 10));
+        }
         final ViewGroup.LayoutParams params = mOverlay.getLayoutParams();
-        if (params.height != mKeyboardView.getHeight()) {
-            params.height = mKeyboardView.getHeight();
+        if (params.height != height) {
+            params.height = height;
             mOverlay.setLayoutParams(params);
         }
         final int bottom = mIme.getResources().getDimensionPixelSize(R.dimen.cifra_bar_height) / 7
@@ -1162,8 +1372,12 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
         }
 
         final boolean showClipboard = available && mClipboardHasMessage
-                && mMode != Mode.READ && mMode != Mode.BUSY && mMode != Mode.PICK_IDENTITY;
+                && mMode != Mode.READ && mMode != Mode.BUSY && mMode != Mode.PICK_IDENTITY
+                && mMode != Mode.QR_SHOW;
         mClipboardButton.setVisibility(showClipboard ? View.VISIBLE : View.GONE);
+        final boolean showQr = available && mMode == Mode.IDLE && qrEnabled();
+        mQrButton.setVisibility(showQr ? View.VISIBLE : View.GONE);
+        mQrButton.setColorFilter(mStatus.getCurrentTextColor());
         mEncryptButton.setVisibility(mMode == Mode.COMPOSE ? View.VISIBLE : View.GONE);
 
         final CharSequence status;

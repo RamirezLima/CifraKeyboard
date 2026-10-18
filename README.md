@@ -25,6 +25,8 @@ independente. Não confie nele para proteger informações das quais dependa a s
   se recusa a liberar as chaves sem isso.
 - **Leitura.** Copie a mensagem cifrada recebida. O teclado mostra o botão Ler e exibe o texto
   decifrado apenas na própria janela, sem opção de copiar.
+- **Celular frio (QR codes).** As chaves podem ficar num segundo celular que nunca fica online. A
+  mensagem é escrita e lida nele; o celular com internet só leva o texto cifrado, por QR code.
 - **Identidades a partir de palavras BIP39.** 12 ou 24 palavras da lista oficial em inglês e uma
   passphrase opcional. As palavras nunca são gravadas: elas são o seu backup.
 - **Chaves protegidas pelo Android Keystore**, em StrongBox quando o aparelho tem.
@@ -47,10 +49,11 @@ que o app guarda e o que não guarda está em [PRIVACY.md](PRIVACY.md).
 |---|---|---|
 | ID do app | `rkr.simplekeyboard.inputmethod` | `org.cifra.keyboard` (os dois podem ser instalados juntos) |
 | Criptografia | não tem | modo seguro, identidades BIP39, catraca (Double Ratchet) e modo clássico (HPKE) |
+| Câmera | não usa | só para ler QR codes, se você ligar o celular frio |
 | Teclado na tela com teclado físico conectado | desligado por padrão | ligado por padrão |
 | Backup do Android | ligado | desligado |
 | Política de privacidade e licença | abrem páginas no GitHub | exibidas no próprio app |
-| Tamanho do APK | menos de 1 MB | cerca de 2 MB (inclui o Bouncy Castle) |
+| Tamanho do APK | menos de 1 MB | cerca de 2 MB (inclui o Bouncy Castle e a ZXing) |
 
 O código Java mantém o pacote original `rkr.simplekeyboard.inputmethod`, para facilitar acompanhar
 as atualizações do Simple Keyboard. O que é do Cifra fica em

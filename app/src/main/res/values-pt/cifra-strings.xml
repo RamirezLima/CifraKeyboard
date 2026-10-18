@@ -86,8 +86,8 @@
 
     <!-- Sobre: privacidade e licença, exibidas no app -->
     <string name="cifra_license_summary">Um fork do Simple Keyboard · Licença Apache 2.0</string>
-    <string name="cifra_license_text">O Cifra Keyboard é um fork do Simple Keyboard (github.com/rkkr/simple-keyboard), de Raimondas Rimkus e colaboradores, que por sua vez é baseado no teclado LatinIME do Android Open Source Project. Não é afiliado nem endossado pelos autores do Simple Keyboard.\n\nLicenciado sob a Licença Apache, versão 2.0 (apache.org/licenses/LICENSE-2.0). Distribuído \"no estado em que se encontra\", sem garantias ou condições de qualquer tipo.\n\nComponentes de terceiros:\n• Bouncy Castle Crypto APIs, licença MIT\n• Lista de palavras BIP39 em inglês (bitcoin/bips), licença MIT\n• Ícones Material, Licença Apache 2.0</string>
-    <string name="cifra_privacy_text">O Cifra Keyboard não tem permissão de internet e não envia nada a lugar nenhum: sem estatísticas, sem relatórios de erro, sem anúncios.\n\nSomente neste aparelho, ele guarda:\n• suas identidades: nome, chave pública e a chave privada lacrada pelo Android Keystore;\n• seus contatos: nome e chave pública;\n• as conversas no modo catraca: as chaves em uso, as chaves de mensagens que ainda não chegaram (por até 7 dias) e, se \"Reler mensagens\" estiver ligado, as chaves das mensagens já lidas até o prazo acabar. Tudo isso fica lacrado pelo Android Keystore. Enquanto a chave de uma mensagem existir, essa mensagem cifrada pode ser aberta de novo neste aparelho;\n• as configurações do teclado e o resultado do diagnóstico em \"Proteção das chaves neste aparelho\".\n\nEle nunca guarda suas palavras BIP39, sua passphrase nem o texto das mensagens que você escreve ou decifra. Lê a área de transferência só no aparelho, para encontrar mensagens cifradas.\n\nO backup está desligado. \"Apagar todas as chaves\" remove identidades, contatos e conversas; desinstalar o app remove tudo.</string>
+    <string name="cifra_license_text">O Cifra Keyboard é um fork do Simple Keyboard (github.com/rkkr/simple-keyboard), de Raimondas Rimkus e colaboradores, que por sua vez é baseado no teclado LatinIME do Android Open Source Project. Não é afiliado nem endossado pelos autores do Simple Keyboard.\n\nLicenciado sob a Licença Apache, versão 2.0 (apache.org/licenses/LICENSE-2.0). Distribuído \"no estado em que se encontra\", sem garantias ou condições de qualquer tipo.\n\nComponentes de terceiros:\n• Bouncy Castle Crypto APIs, licença MIT\n• Lista de palavras BIP39 em inglês (bitcoin/bips), licença MIT\n• ZXing core (QR codes), Licença Apache 2.0\n• Ícones Material, Licença Apache 2.0</string>
+    <string name="cifra_privacy_text">O Cifra Keyboard não tem permissão de internet e não envia nada a lugar nenhum: sem estatísticas, sem relatórios de erro, sem anúncios.\n\nSomente neste aparelho, ele guarda:\n• suas identidades: nome, chave pública e a chave privada lacrada pelo Android Keystore;\n• seus contatos: nome e chave pública;\n• as conversas no modo catraca: as chaves em uso, as chaves de mensagens que ainda não chegaram (por até 7 dias) e, se \"Reler mensagens\" estiver ligado, as chaves das mensagens já lidas até o prazo acabar. Tudo isso fica lacrado pelo Android Keystore. Enquanto a chave de uma mensagem existir, essa mensagem cifrada pode ser aberta de novo neste aparelho;\n• as configurações do teclado e o resultado do diagnóstico em \"Proteção das chaves neste aparelho\".\n\nEle nunca guarda suas palavras BIP39, sua passphrase nem o texto das mensagens que você escreve ou decifra. Lê a área de transferência só no aparelho, para encontrar mensagens cifradas.\n\nSe você ligar o botão de QR code, a câmera é usada só enquanto um código é lido: as imagens são analisadas na memória, uma por vez, e nunca gravadas.\n\nO backup está desligado. \"Apagar todas as chaves\" remove identidades, contatos e conversas; desinstalar o app remove tudo.</string>
 
     <!-- Criação de identidade -->
     <string name="cifra_identity_setup_title">Nova identidade</string>
@@ -175,4 +175,45 @@
     <string name="cifra_lock_content_description">Modo seguro</string>
     <string name="cifra_clipboard_content_description">Ler a mensagem cifrada da área de transferência</string>
     <string name="cifra_chars">%1$d caracteres</string>
+    <!-- Celular frio: QR codes -->
+    <string name="cifra_encrypted_message">Mensagem cifrada</string>
+    <string name="cifra_qr_content_description">QR codes</string>
+    <string name="cifra_qr_menu">QR codes</string>
+    <string name="cifra_qr_scan">Ler um QR code</string>
+    <string name="cifra_qr_scan_detail">Mensagem cifrada mostrada por outro celular</string>
+    <string name="cifra_qr_show_clipboard">Mostrar a mensagem copiada como QR code</string>
+    <string name="cifra_qr_show_clipboard_detail">Para o celular frio ler</string>
+    <string name="cifra_qr_show_preview">Mostrar como QR code</string>
+    <string name="cifra_qr_show_preview_detail">Para o celular com internet ler e enviar. Depois o rascunho é apagado, como ao inserir.</string>
+    <string name="cifra_qr_too_big">Grande demais para um QR code: até <xliff:g id="LIMIT" example="764">%d</xliff:g> letras, e letras com acento contam como duas.</string>
+    <string name="cifra_qr_result_title">Mensagem cifrada lida do QR code</string>
+    <string name="cifra_qr_result_info_cold">Leia aqui se ela for para você, ou insira no app para enviar.</string>
+    <string name="cifra_qr_result_info_hot">Insira no app para enviar. Este celular não tem chaves para lê-la.</string>
+    <string name="cifra_qr_read_here">Ler aqui</string>
+    <string name="cifra_qr_show_button">Mostrar QR code</string>
+    <string name="cifra_preview_info_qr">Só <xliff:g id="NAME" example="Maria">%s</xliff:g> consegue ler. Mostre o QR code para o celular com internet, que envia.</string>
+    <string name="cifra_qr_not_message">Este QR code não é uma mensagem do Cifra.</string>
+    <string name="cifra_qr_not_key">Este QR code não é uma chave pública do Cifra.</string>
+    <string name="cifra_qr_scan_title">Ler um QR code</string>
+    <string name="cifra_qr_scan_key_title">Ler uma chave pública</string>
+    <string name="cifra_qr_scan_hint">Aponte para o QR code na tela do outro celular.</string>
+    <string name="cifra_qr_no_camera">O Cifra precisa da câmera para ler QR codes. Libere nas configurações do Android, em Apps, Cifra Keyboard, Permissões.</string>
+    <string name="cifra_qr_camera_error">Não foi possível abrir a câmera.</string>
+    <string name="cifra_qr_online_warning">Este celular guarda chaves e não está em modo avião. Um celular frio deve ficar sempre offline: modo avião ligado, Wi-Fi e Bluetooth desligados.</string>
+    <string name="cifra_qr_show_title">Mensagem cifrada</string>
+    <string name="cifra_qr_show_hint">Leia com o Cifra no outro celular. Este código só tem texto cifrado.</string>
+    <string name="cifra_qr_image_description">QR code da mensagem cifrada</string>
+    <string name="cifra_qr_key_description">QR code da chave pública</string>
+    <string name="cifra_qr_key_hint">Para adicionar você como contato, a outra pessoa pode ler este código com o Cifra.</string>
+    <string name="cifra_scan_qr">Ler QR code</string>
+    <string name="cifra_cold">Celular frio (QR codes)</string>
+    <string name="cifra_qr_switch_title">Botão de QR code no teclado</string>
+    <string name="cifra_qr_switch_summary_off">Para usar o Cifra com um celular frio, que nunca fica online e guarda as chaves.</string>
+    <string name="cifra_qr_switch_summary_on">Lê e mostra mensagens cifradas entre este celular e um celular frio. A câmera só é usada enquanto um código é lido.</string>
+    <string name="cifra_cold_howto_title">Como usar um celular frio</string>
+    <string name="cifra_cold_howto_summary">Um celular que nunca fica online guarda as chaves; o que tem internet só leva texto cifrado.</string>
+    <string name="cifra_cold_howto_text">O celular frio guarda suas identidades e contatos e nunca fica online. O celular com internet não guarda chaves: só leva texto cifrado.\n\nPara enviar: no celular frio, abra a área de escrita, toque no cadeado, escreva e cifre, e então toque em \"Mostrar como QR code\". No celular com internet, toque no botão de QR do teclado, leia o código e insira a mensagem na conversa.\n\nPara ler: no celular com internet, copie a mensagem cifrada, toque no botão de QR e mostre-a como QR code. No celular frio, abra a área de escrita, toque no botão de QR e leia o código. A mensagem só aparece no celular frio.\n\nNunca digite um segredo no celular com internet. Deixe o celular frio em modo avião, com Wi-Fi e Bluetooth desligados, e ligue o botão de QR code no celular com internet; na área de escrita do celular frio ele sempre aparece. Um QR code comporta até <xliff:g id="LIMIT" example="764">%d</xliff:g> letras.</string>
+    <string name="cifra_cold_write_title">Área de escrita</string>
+    <string name="cifra_cold_write_summary">Um campo de texto para abrir o teclado no celular frio. Nada digitado aqui é guardado.</string>
+    <string name="cifra_cold_write_hint">Toque no cadeado do teclado para escrever no modo seguro.</string>
 </resources>

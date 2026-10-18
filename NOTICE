@@ -29,7 +29,11 @@ From https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt
 Copyright (c) 2013 Marek Palatinus, Pavol Rusnak, Aaron Voisine, Sean Bowe
 MIT License, reproduced below.
 
-Material Design icons "lock", "lock_open", "vpn_key" and "close"
+ZXing core (com.google.zxing:core), QR code encoding and decoding
+Copyright ZXing authors (https://github.com/zxing/zxing)
+Apache License, Version 2.0.
+
+Material Design icons "lock", "lock_open", "vpn_key", "close" and "qr_code"
 (app/src/main/res/drawable/ic_cifra_*.xml)
 Copyright Google LLC
 Apache License, Version 2.0.
