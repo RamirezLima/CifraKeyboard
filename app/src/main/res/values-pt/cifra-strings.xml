@@ -11,8 +11,8 @@
     <string name="cifra_add_contact_summary">Cole a chave pública que a pessoa compartilhou com você</string>
     <string name="cifra_security">Segurança</string>
     <string name="cifra_wipe">Apagar todas as chaves</string>
-    <string name="cifra_wipe_summary">Apaga identidades, contatos e as chaves do Keystore. Só as suas palavras trazem as identidades de volta.</string>
-    <string name="cifra_wipe_confirm">Apagar todas as identidades e contatos? Isso não pode ser desfeito.</string>
+    <string name="cifra_wipe_summary">Apaga identidades, contatos, conversas e as chaves do Keystore. Só as suas palavras trazem as identidades de volta.</string>
+    <string name="cifra_wipe_confirm">Apagar todas as identidades, contatos e conversas? Isso não pode ser desfeito.</string>
     <string name="cifra_wiped">Todas as chaves foram apagadas</string>
     <string name="cifra_no_identities">Nenhuma identidade ainda</string>
     <string name="cifra_no_contacts">Nenhum contato ainda</string>
@@ -87,7 +87,7 @@
     <!-- Sobre: privacidade e licença, exibidas no app -->
     <string name="cifra_license_summary">Um fork do Simple Keyboard · Licença Apache 2.0</string>
     <string name="cifra_license_text">O Cifra Keyboard é um fork do Simple Keyboard (github.com/rkkr/simple-keyboard), de Raimondas Rimkus e colaboradores, que por sua vez é baseado no teclado LatinIME do Android Open Source Project. Não é afiliado nem endossado pelos autores do Simple Keyboard.\n\nLicenciado sob a Licença Apache, versão 2.0 (apache.org/licenses/LICENSE-2.0). Distribuído \"no estado em que se encontra\", sem garantias ou condições de qualquer tipo.\n\nComponentes de terceiros:\n• Bouncy Castle Crypto APIs, licença MIT\n• Lista de palavras BIP39 em inglês (bitcoin/bips), licença MIT\n• Ícones Material, Licença Apache 2.0</string>
-    <string name="cifra_privacy_text">O Cifra Keyboard não tem permissão de internet e não envia nada a lugar nenhum: sem estatísticas, sem relatórios de erro, sem anúncios.\n\nSomente neste aparelho, ele guarda:\n• suas identidades: nome, chave pública e a chave privada lacrada pelo Android Keystore;\n• seus contatos: nome e chave pública;\n• as configurações do teclado.\n\nEle nunca guarda suas palavras BIP39, sua passphrase nem as mensagens que você escreve ou decifra. Lê a área de transferência só no aparelho, para encontrar mensagens cifradas.\n\nO backup está desligado. \"Apagar todas as chaves\" remove identidades e contatos; desinstalar o app remove tudo.</string>
+    <string name="cifra_privacy_text">O Cifra Keyboard não tem permissão de internet e não envia nada a lugar nenhum: sem estatísticas, sem relatórios de erro, sem anúncios.\n\nSomente neste aparelho, ele guarda:\n• suas identidades: nome, chave pública e a chave privada lacrada pelo Android Keystore;\n• seus contatos: nome e chave pública;\n• as conversas no modo catraca: as chaves em uso, as chaves de mensagens que ainda não chegaram (por até 7 dias) e, se \"Reler mensagens\" estiver ligado, as chaves das mensagens já lidas até o prazo acabar. Tudo isso fica lacrado pelo Android Keystore. Enquanto a chave de uma mensagem existir, essa mensagem cifrada pode ser aberta de novo neste aparelho;\n• as configurações do teclado e o resultado do diagnóstico em \"Proteção das chaves neste aparelho\".\n\nEle nunca guarda suas palavras BIP39, sua passphrase nem o texto das mensagens que você escreve ou decifra. Lê a área de transferência só no aparelho, para encontrar mensagens cifradas.\n\nO backup está desligado. \"Apagar todas as chaves\" remove identidades, contatos e conversas; desinstalar o app remove tudo.</string>
 
     <!-- Criação de identidade -->
     <string name="cifra_identity_setup_title">Nova identidade</string>
