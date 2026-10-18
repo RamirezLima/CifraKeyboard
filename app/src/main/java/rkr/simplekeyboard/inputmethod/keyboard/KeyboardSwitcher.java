@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2026 Ramirez Lima
  * Copyright (C) 2025 Raimondas Rimkus
  * Copyright (C) 2024 wittmane
  *
@@ -46,6 +47,8 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
     private static final String TAG = KeyboardSwitcher.class.getSimpleName();
 
     private MainKeyboardView mKeyboardView;
+    // The keys plus the secure mode bar above them.
+    private View mKeyboardFrame;
     private LatinIME mLatinIME;
     private RichInputMethodManager mRichImm;
 
@@ -252,6 +255,9 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
         final int visibility =  isImeSuppressedByHardwareKeyboard(settingsValues, toggleState)
                 ? View.GONE : View.VISIBLE;
         mKeyboardView.setVisibility(visibility);
+        if (mKeyboardFrame != null) {
+            mKeyboardFrame.setVisibility(visibility);
+        }
     }
 
     public enum KeyboardSwitchState {
@@ -349,7 +355,7 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
     }
 
     public View getVisibleKeyboardView() {
-        return mKeyboardView;
+        return mKeyboardFrame != null ? mKeyboardFrame : mKeyboardView;
     }
 
     public MainKeyboardView getMainKeyboardView() {
@@ -375,6 +381,8 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
 
         mKeyboardView = currentInputView.findViewById(R.id.keyboard_view);
         mKeyboardView.setKeyboardActionListener(mLatinIME);
+        mKeyboardFrame = currentInputView.findViewById(R.id.keyboard_frame);
+        mLatinIME.getSecureKeyboard().bindViews(currentInputView);
         return currentInputView;
     }
 }

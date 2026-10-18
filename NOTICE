@@ -1,0 +1,57 @@
+Cifra Keyboard
+Copyright 2026 Ramirez Lima
+
+This product is a fork of Simple Keyboard
+(https://github.com/rkkr/simple-keyboard), Copyright Raimondas Rimkus and the
+Simple Keyboard contributors, licensed under the Apache License, Version 2.0.
+It is not affiliated with or endorsed by the Simple Keyboard authors.
+
+Simple Keyboard is based on the AOSP LatinIME keyboard
+(https://android.googlesource.com/platform/packages/inputmethods/LatinIME/),
+Copyright The Android Open Source Project, licensed under the Apache License,
+Version 2.0.
+
+Files carried over from Simple Keyboard keep their original copyright notices.
+Files changed for Cifra Keyboard carry an additional
+"Copyright (C) 2026 Ramirez Lima" notice.
+
+-------------------------------------------------------------------------------
+Third-party components
+-------------------------------------------------------------------------------
+
+Bouncy Castle Crypto APIs (org.bouncycastle:bcprov-jdk18on)
+Copyright (c) 2000 The Legion of the Bouncy Castle Inc.
+(https://www.bouncycastle.org)
+MIT License, reproduced below.
+
+BIP-0039 English wordlist (app/src/main/res/raw/bip39_english.txt)
+From https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt
+Copyright (c) 2013 Marek Palatinus, Pavol Rusnak, Aaron Voisine, Sean Bowe
+MIT License, reproduced below.
+
+Material Design icons "lock", "lock_open", "vpn_key" and "close"
+(app/src/main/res/drawable/ic_cifra_*.xml)
+Copyright Google LLC
+Apache License, Version 2.0.
+
+-------------------------------------------------------------------------------
+MIT License
+-------------------------------------------------------------------------------
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

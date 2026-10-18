@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The draft typed in secure mode. It lives only in the keyboard; the app never sees it. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/cifra_compose_text"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginLeft="6dp"
+    android:layout_marginRight="6dp"
+    android:layout_marginBottom="4dp"
+    android:background="@drawable/cifra_button_background"
+    android:gravity="top|left"
+    android:maxLines="4"
+    android:minLines="2"
+    android:padding="8dp"
+    android:scrollbars="vertical"
+    android:textColor="?attr/functionalTextColor"
+    android:textColorHint="?attr/functionalTextColor"
+    android:textSize="16sp"
+    android:visibility="gone" />

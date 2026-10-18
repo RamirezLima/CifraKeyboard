@@ -1,31 +1,26 @@
-Este teclado foi criado para quem precisa apenas de um teclado e nada mais!
+O Cifra Keyboard cifra suas mensagens dentro do teclado, antes de qualquer app recebê-las. Apps de chat e de e-mail só veem texto cifrado, então sua privacidade não depende da criptografia deles.
 
-Para ativar o teclado:
+<b>O Cifra Keyboard é um fork do Simple Keyboard</b>, de Raimondas Rimkus e colaboradores, que por sua vez é baseado no teclado LatinIME do AOSP. Não é afiliado nem endossado pelos autores do Simple Keyboard.
 
-* Abra o “Simple Keyboard” a partir do seu launcher
+<b>Atenção:</b> o Cifra Keyboard está em desenvolvimento e ainda não passou por auditoria independente.
 
-* Ative o Simple Keyboard (será exibido o aviso padrão do sistema sobre rastreamento)
+<b>Como funciona:</b>
 
-* Mude para o Simple Keyboard a partir do método de entrada atual (varia de acordo com o teclado, geralmente pressionando longamente a barra de espaço)
+* Crie uma identidade a partir de 12 ou 24 palavras BIP39 (lista em inglês) e uma passphrase opcional. As palavras nunca são gravadas.
+* Adicione as chaves públicas dos seus contatos e confira as impressões digitais.
+* Toque no cadeado, escolha o contato e escreva. O texto fica dentro do teclado até você tocar em Cifrar e aprovar o resultado.
+* Copie uma mensagem cifrada recebida e toque em Ler: o texto aparece só dentro do teclado.
 
-* Para editar as configurações do Simple Keyboard, pressione longamente a tecla “,” ou acesse Configurações do sistema, Idiomas e entrada, Simple Keyboard.
+<b>Segurança:</b>
 
-* Você pode ativar/desativar todos os métodos de entrada em Configurações, Idiomas e Entrada, Gerenciar Teclados (varia de acordo com o aparelho)
+* Sem permissão de internet, sem backup
+* Chaves privadas lacradas pelo Android Keystore (StrongBox quando disponível)
+* Capturas e gravação de tela bloqueadas no teclado
+* HPKE (RFC 9180) com X25519 e ChaCha20-Poly1305
 
-<b>Recursos:</b>
+<b>Herdado do Simple Keyboard:</b>
 
-* Pouco espaço (&lt;1MB)
-* Teclado com altura ajustável
-* Números em linha separada
-* Deslize na barra de espaço para mover o cursor
-* Deslizar para deletar
+* Altura do teclado ajustável
+* Linha de números
+* Deslizar no espaço para mover o cursor e na tecla apagar para apagar
 * Cores de tema personalizadas
-* Permissões mínimas (Somente vibrar)
-* Sem anúncios
-
-<b>Recursos que não possui e provavelmente nunca terá:</b>
-
-* Emojis
-* GIFs
-* Verificação ortográfica
-* Digitação por gestos

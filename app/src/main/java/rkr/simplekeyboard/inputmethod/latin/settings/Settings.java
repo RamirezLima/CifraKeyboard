@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2013 The Android Open Source Project
+ * Copyright (C) 2026 Ramirez Lima
  * Copyright (C) 2025 Raimondas Rimkus
  * Copyright (C) 2024 wittmane
  * Copyright (C) 2019 Micha LaQua
@@ -228,7 +229,8 @@ public final class Settings extends BroadcastReceiver implements SharedPreferenc
     }
 
     public static boolean readUseOnScreenKeyboard(final SharedPreferences prefs) {
-        return prefs.getBoolean(PREF_USE_ON_SCREEN, false);
+        // On by default: secure mode and its buttons only exist on screen.
+        return prefs.getBoolean(PREF_USE_ON_SCREEN, true);
     }
 
     public static boolean readEnableImeSwitch(final SharedPreferences prefs) {

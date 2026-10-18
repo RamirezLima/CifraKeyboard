@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
+ * Copyright (C) 2026 Ramirez Lima
  * Copyright (C) 2025 Raimondas Rimkus
  * Copyright (C) 2021 wittmane
  *
@@ -32,9 +33,6 @@ import rkr.simplekeyboard.inputmethod.latin.common.StringUtils;
  * A helper class to deal with displaying locales.
   */
 public final class LocaleResourceUtils {
-    // This reference class {@link R} must be located in the same package as LatinIME.java.
-    private static final String RESOURCE_PACKAGE_NAME = R.class.getPackage().getName();
-
     private static volatile boolean sInitialized = false;
     private static final Object sInitializeLock = new Object();
     private static Resources sResources;
@@ -68,13 +66,17 @@ public final class LocaleResourceUtils {
     private static void initLocked(final Context context) {
         final Resources res = context.getResources();
         sResources = res;
+        // Ask the resource table: it is named after the application id, which can differ from
+        // the Java package of R.
+        final String resourcePackageName = res.getResourcePackageName(
+                R.array.locale_exception_keys);
 
         final String[] exceptionalLocaleInRootLocale = res.getStringArray(
                 R.array.locale_displayed_in_root_locale);
         for (int i = 0; i < exceptionalLocaleInRootLocale.length; i++) {
             final String localeString = exceptionalLocaleInRootLocale[i];
             final String resourceName = LOCALE_NAME_RESOURCE_IN_ROOT_LOCALE_PREFIX + localeString;
-            final int resId = res.getIdentifier(resourceName, null, RESOURCE_PACKAGE_NAME);
+            final int resId = res.getIdentifier(resourceName, null, resourcePackageName);
             sExceptionalLocaleDisplayedInRootLocale.put(localeString, resId);
         }
 
@@ -82,7 +84,7 @@ public final class LocaleResourceUtils {
         for (int i = 0; i < exceptionalLocales.length; i++) {
             final String localeString = exceptionalLocales[i];
             final String resourceName = LOCALE_NAME_RESOURCE_PREFIX + localeString;
-            final int resId = res.getIdentifier(resourceName, null, RESOURCE_PACKAGE_NAME);
+            final int resId = res.getIdentifier(resourceName, null, resourcePackageName);
             sExceptionalLocaleToNameIdsMap.put(localeString, resId);
         }
     }

@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2013 The Android Open Source Project
+ * Copyright (C) 2026 Ramirez Lima
  * Copyright (C) 2021 wittmane
  * Copyright (C) 2017 Raimondas Rimkus
  *
@@ -20,6 +21,7 @@ package rkr.simplekeyboard.inputmethod.latin.utils;
 
 import java.util.HashSet;
 
+import rkr.simplekeyboard.inputmethod.crypto.CryptoSettingsFragment;
 import rkr.simplekeyboard.inputmethod.latin.settings.AppearanceSettingsFragment;
 import rkr.simplekeyboard.inputmethod.latin.settings.KeyPressSettingsFragment;
 import rkr.simplekeyboard.inputmethod.latin.settings.LanguagesSettingsFragment;
@@ -38,6 +40,7 @@ public class FragmentUtils {
         sLatinImeFragments.add(SettingsFragment.class.getName());
         sLatinImeFragments.add(LanguagesSettingsFragment.class.getName());
         sLatinImeFragments.add(SingleLanguageSettingsFragment.class.getName());
+        sLatinImeFragments.add(CryptoSettingsFragment.class.getName());
     }
 
     public static boolean isValidFragment(String fragmentName) {

@@ -50,7 +50,7 @@
     <string name="show_number_row">숫자 행을 별도로 표시합니다</string>
     <string name="space_swipe">스페이스바 스와이프 커서 이동</string>
     <string name="delete_swipe">삭제 스와이프</string>
-    <string name="setup_message">간편 키보드가 활성화되어 있지 않습니다. 확인을 클릭하여 언어 및 입력&amp; 설정을 여세요. 간편 키보드를 사용하려면 현재 키보드 설정에서 간편 키보드를 선택해야 합니다.</string>
+    <string name="setup_message">Cifra Keyboard가 활성화되어 있지 않습니다. 확인을 클릭하여 언어 및 입력&amp; 설정을 여세요. Cifra Keyboard를 사용하려면 현재 키보드 설정에서 Cifra Keyboard를 선택해야 합니다.</string>
     <string name="settings_screen_key_press">키 누르기</string>
     <string name="user_languages">활성화된 키보드 언어</string>
     <string name="add_language">언어 추가</string>

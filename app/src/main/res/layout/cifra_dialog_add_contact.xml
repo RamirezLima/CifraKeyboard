@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:importantForAutofill="noExcludeDescendants"
+    android:orientation="vertical"
+    android:paddingLeft="20dp"
+    android:paddingTop="8dp"
+    android:paddingRight="20dp">
+
+    <EditText
+        android:id="@+id/cifra_contact_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/cifra_contact_name_hint"
+        android:imeOptions="flagNoPersonalizedLearning"
+        android:inputType="textPersonName|textCapWords|textNoSuggestions" />
+
+    <EditText
+        android:id="@+id/cifra_contact_key"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:hint="@string/cifra_contact_key_hint"
+        android:imeOptions="flagNoPersonalizedLearning"
+        android:inputType="textMultiLine|textNoSuggestions|textVisiblePassword"
+        android:maxLines="4"
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/cifra_contact_fingerprint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="monospace"
+        android:textSize="14sp" />
+</LinearLayout>

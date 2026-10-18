@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2012 The Android Open Source Project
+ * Copyright (C) 2026 Ramirez Lima
  * Copyright (C) 2025 Raimondas Rimkus
  * Copyright (C) 2021 wittmane
  *
@@ -31,6 +32,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 
@@ -94,6 +96,8 @@ public class SettingsActivity extends PreferenceActivity {
     @Override
     protected void onCreate(final Bundle savedState) {
         super.onCreate(savedState);
+        // Key and contact screens must not appear in screenshots or the recents preview.
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             final View container = (View) getListView().getParent().getParent();

@@ -2,12 +2,14 @@ apply plugin: 'com.android.application'
 
 android {
     defaultConfig {
-        applicationId "rkr.simplekeyboard.inputmethod"
+        applicationId "org.cifra.keyboard"
         compileSdk 37
         minSdkVersion 24
         targetSdkVersion 37
+        // Cifra's own version. The versionCode keeps counting from Simple Keyboard so builds
+        // never look like a downgrade.
         versionCode 148
-        versionName "6.7"
+        versionName "0.1.0"
     }
     buildTypes {
         release {
@@ -17,6 +19,10 @@ android {
     }
     namespace 'rkr.simplekeyboard.inputmethod'
 
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
     dependenciesInfo {
         includeInApk = false
         includeInBundle = false
@@ -24,4 +30,9 @@ android {
 }
 
 dependencies {
+    // Lightweight API only (X25519, HPKE, ChaCha20-Poly1305, PBKDF2). No JCA provider is
+    // registered, so R8 can strip everything that is not referenced.
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.80.2'
+
+    testImplementation 'junit:junit:4.13.2'
 }

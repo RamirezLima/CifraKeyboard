@@ -50,7 +50,7 @@
     <string name="show_number_row">Visa separat sifferrad</string>
     <string name="space_swipe">Blankstegssvepning av markören</string>
     <string name="delete_swipe">Radera svepning</string>
-    <string name="setup_message">Enkelt tangentbord är inte aktiverat. Klicka på OK för att öppna inställningarna&amp; för språk och inmatning. Du måste välja Enkelt tangentbord på ditt nuvarande tangentbord för att använda det.</string>
+    <string name="setup_message">Cifra Keyboard är inte aktiverat. Klicka på OK för att öppna inställningarna&amp; för språk och inmatning. Du måste välja Cifra Keyboard på ditt nuvarande tangentbord för att använda det.</string>
     <string name="settings_screen_key_press">Knapptryckning</string>
     <string name="user_languages">Aktiverade tangentbordsspråk</string>
     <string name="add_language">Lägg till språk</string>

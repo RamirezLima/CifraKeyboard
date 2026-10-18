@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Secure mode bar shown above the keys. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/cifra_bar"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/cifra_bar_height"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingLeft="4dp"
+    android:paddingRight="4dp">
+
+    <!-- The corner button: picks a recipient, manages keys and leaves secure mode. -->
+    <ImageView
+        android:id="@+id/cifra_lock_button"
+        android:layout_width="40dp"
+        android:layout_height="36dp"
+        android:background="@drawable/cifra_button_background"
+        android:clickable="true"
+        android:contentDescription="@string/cifra_lock_content_description"
+        android:padding="7dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_cifra_lock_open"
+        android:tint="?attr/functionalTextColor" />
+
+    <TextView
+        android:id="@+id/cifra_status"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="4dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:textColor="?attr/functionalTextColor"
+        android:textSize="14sp" />
+
+    <!-- The "encrypted message in the clipboard" key. Only visible when there is one. -->
+    <TextView
+        android:id="@+id/cifra_clipboard_button"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:layout_marginLeft="4dp"
+        android:background="@drawable/cifra_alert_background"
+        android:clickable="true"
+        android:contentDescription="@string/cifra_clipboard_content_description"
+        android:drawableLeft="@drawable/ic_cifra_key"
+        android:drawablePadding="6dp"
+        android:gravity="center_vertical"
+        android:paddingLeft="10dp"
+        android:paddingRight="12dp"
+        android:singleLine="true"
+        android:text="@string/cifra_bar_clipboard"
+        android:textColor="@color/cifra_on_accent"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/cifra_encrypt_button"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:layout_marginLeft="4dp"
+        android:background="@drawable/cifra_accent_background"
+        android:clickable="true"
+        android:drawableLeft="@drawable/ic_cifra_lock"
+        android:drawablePadding="6dp"
+        android:gravity="center_vertical"
+        android:paddingLeft="10dp"
+        android:paddingRight="14dp"
+        android:singleLine="true"
+        android:text="@string/cifra_bar_encrypt"
+        android:textColor="@color/cifra_on_accent"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+</LinearLayout>

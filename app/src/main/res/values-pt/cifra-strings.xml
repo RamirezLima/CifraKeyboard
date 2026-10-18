@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Configurações: chaves e contatos -->
+    <string name="cifra_settings_title">Chaves e contatos</string>
+    <string name="cifra_settings_summary">Suas identidades (palavras BIP39) e as chaves públicas dos seus contatos</string>
+    <string name="cifra_identities">Minhas identidades</string>
+    <string name="cifra_add_identity">Adicionar identidade</string>
+    <string name="cifra_add_identity_summary">Digite suas 12 ou 24 palavras BIP39 (lista em inglês) ou gere novas</string>
+    <string name="cifra_contacts">Contatos</string>
+    <string name="cifra_add_contact">Adicionar contato</string>
+    <string name="cifra_add_contact_summary">Cole a chave pública que a pessoa compartilhou com você</string>
+    <string name="cifra_security">Segurança</string>
+    <string name="cifra_wipe">Apagar todas as chaves</string>
+    <string name="cifra_wipe_summary">Apaga identidades, contatos e as chaves do Keystore. Só as suas palavras trazem as identidades de volta.</string>
+    <string name="cifra_wipe_confirm">Apagar todas as identidades e contatos? Isso não pode ser desfeito.</string>
+    <string name="cifra_wiped">Todas as chaves foram apagadas</string>
+    <string name="cifra_no_identities">Nenhuma identidade ainda</string>
+    <string name="cifra_no_contacts">Nenhum contato ainda</string>
+    <string name="cifra_default_identity">Padrão · envia suas mensagens</string>
+    <string name="cifra_verified">Verificado</string>
+    <string name="cifra_not_verified">Não verificado</string>
+    <string name="cifra_fingerprint">Impressão digital: <xliff:g id="FINGERPRINT" example="12345 67890">%s</xliff:g></string>
+    <string name="cifra_public_key">Chave pública</string>
+    <string name="cifra_copy_public_key">Copiar chave</string>
+    <string name="cifra_share_public_key">Compartilhar</string>
+    <string name="cifra_share_text">Minha chave pública Cifra:\n<xliff:g id="KEY" example="cifra1...">%1$s</xliff:g>\nImpressão digital: <xliff:g id="FINGERPRINT" example="12345 67890">%2$s</xliff:g></string>
+    <string name="cifra_copied">Chave pública copiada</string>
+    <string name="cifra_delete">Excluir</string>
+    <string name="cifra_delete_identity_confirm">Excluir a identidade \"<xliff:g id="NAME" example="Trabalho">%s</xliff:g>\"? Ela só poderá ser recuperada com as palavras e a passphrase.</string>
+    <string name="cifra_delete_contact_confirm">Excluir o contato \"<xliff:g id="NAME" example="Maria">%s</xliff:g>\"?</string>
+    <string name="cifra_set_default">Usar como padrão</string>
+    <string name="cifra_mark_verified">Marcar como verificado</string>
+    <string name="cifra_mark_unverified">Marcar como não verificado</string>
+    <string name="cifra_verify_hint">Antes de confiar nesta chave, compare a impressão digital com <xliff:g id="NAME" example="Maria">%s</xliff:g> pessoalmente ou por ligação.</string>
+    <string name="cifra_contact_name_hint">Nome</string>
+    <string name="cifra_contact_key_hint">Chave pública (cifra1…)</string>
+    <string name="cifra_invalid_public_key">Nenhuma chave pública válida encontrada</string>
+    <string name="cifra_duplicate_contact">Esta chave já está salva</string>
+    <string name="cifra_duplicate_identity">Esta identidade já existe</string>
+    <string name="cifra_name_required">Digite um nome</string>
+    <string name="cifra_rename">Renomear</string>
+    <string name="cifra_error_locked">Desbloqueie o aparelho para usar suas chaves</string>
+    <string name="cifra_error_key_lost">O cofre protegido do Keystore foi redefinido. Apague as chaves e restaure suas identidades pelas palavras.</string>
+    <string name="cifra_error_generic">A operação falhou</string>
+    <string name="cifra_no_lock_screen">Este aparelho não tem bloqueio de tela: quem estiver com ele pode usar suas chaves.</string>
+    <string name="cifra_screen_reader_title">Permitir leitor de tela no modo seguro</string>
+    <string name="cifra_screen_reader_summary_off">Desligado: rascunhos, mensagens decifradas e nomes de contatos no teclado ficam ocultos de todos os serviços de acessibilidade, inclusive o TalkBack.</string>
+    <string name="cifra_screen_reader_summary_on">Ligado: o TalkBack pode ler o modo seguro. Outros apps que usam acessibilidade continuam sem acesso.</string>
+    <string name="cifra_screen_reader_summary_on_legacy">Ligado: nesta versão do Android, qualquer serviço de acessibilidade instalado pode ler rascunhos, mensagens decifradas e nomes de contatos.</string>
+    <string name="cifra_about_title">Como funciona</string>
+    <string name="cifra_about_summary">Sem internet. Palavras e passphrases nunca são guardadas. As chaves secretas ficam seladas pelo Android Keystore.</string>
+
+    <!-- Sobre: privacidade e licença, exibidas no app -->
+    <string name="cifra_license_summary">Um fork do Simple Keyboard · Licença Apache 2.0</string>
+    <string name="cifra_license_text">O Cifra Keyboard é um fork do Simple Keyboard (github.com/rkkr/simple-keyboard), de Raimondas Rimkus e colaboradores, que por sua vez é baseado no teclado LatinIME do Android Open Source Project. Não é afiliado nem endossado pelos autores do Simple Keyboard.\n\nLicenciado sob a Licença Apache, versão 2.0 (apache.org/licenses/LICENSE-2.0). Distribuído \"no estado em que se encontra\", sem garantias ou condições de qualquer tipo.\n\nComponentes de terceiros:\n• Bouncy Castle Crypto APIs, licença MIT\n• Lista de palavras BIP39 em inglês (bitcoin/bips), licença MIT\n• Ícones Material, Licença Apache 2.0</string>
+    <string name="cifra_privacy_text">O Cifra Keyboard não tem permissão de internet e não envia nada a lugar nenhum: sem estatísticas, sem relatórios de erro, sem anúncios.\n\nSomente neste aparelho, ele guarda:\n• suas identidades: nome, chave pública e a chave privada lacrada pelo Android Keystore;\n• seus contatos: nome e chave pública;\n• as configurações do teclado.\n\nEle nunca guarda suas palavras BIP39, sua passphrase nem as mensagens que você escreve ou decifra. Lê a área de transferência só no aparelho, para encontrar mensagens cifradas.\n\nO backup está desligado. \"Apagar todas as chaves\" remove identidades e contatos; desinstalar o app remove tudo.</string>
+
+    <!-- Criação de identidade -->
+    <string name="cifra_identity_setup_title">Nova identidade</string>
+    <string name="cifra_identity_name_hint">Nome (ex.: Trabalho)</string>
+    <string name="cifra_mode_restore">Já tenho palavras</string>
+    <string name="cifra_mode_generate">Gerar novas palavras</string>
+    <string name="cifra_words_hint">Digite as palavras (lista BIP39 em inglês) separadas por espaço</string>
+    <string name="cifra_words_12">12 palavras</string>
+    <string name="cifra_words_24">24 palavras</string>
+    <string name="cifra_generate">Gerar</string>
+    <string name="cifra_generated_warning">Anote estas palavras no papel, na ordem, e guarde em local seguro. Quem tiver as palavras (e a passphrase) lê suas mensagens. Elas não são guardadas e não serão mostradas de novo.</string>
+    <string name="cifra_passphrase_hint">Passphrase (opcional)</string>
+    <string name="cifra_passphrase_confirm_hint">Repita a passphrase</string>
+    <string name="cifra_passphrase_explain">Cada passphrase abre uma identidade diferente com as mesmas palavras. Esquecer a passphrase significa perder a identidade.</string>
+    <string name="cifra_passphrase_mismatch">As passphrases não coincidem</string>
+    <string name="cifra_status_unknown_word">A palavra <xliff:g id="POSITION" example="3">%1$d</xliff:g> (\"<xliff:g id="WORD" example="abcd">%2$s</xliff:g>\") não está na lista BIP39 em inglês</string>
+    <string name="cifra_status_bad_count">Use 12, 15, 18, 21 ou 24 palavras (agora <xliff:g id="COUNT" example="7">%1$d</xliff:g>)</string>
+    <string name="cifra_status_bad_checksum">Estas palavras não formam uma sequência válida (checksum). Confira a ordem e a grafia.</string>
+    <string name="cifra_status_valid">✓ <xliff:g id="COUNT" example="12">%1$d</xliff:g> palavras válidas</string>
+    <string name="cifra_quiz">Para confirmar que anotou, digite a palavra nº <xliff:g id="FIRST" example="3">%1$d</xliff:g> e a nº <xliff:g id="SECOND" example="9">%2$d</xliff:g></string>
+    <string name="cifra_quiz_word_hint">Palavra nº <xliff:g id="POSITION" example="3">%1$d</xliff:g></string>
+    <string name="cifra_quiz_failed">As palavras não conferem. Confira suas anotações.</string>
+    <string name="cifra_save_identity">Criar identidade</string>
+    <string name="cifra_deriving">Derivando chaves…</string>
+    <string name="cifra_identity_created">Identidade criada</string>
+    <string name="cifra_reuse_warning">Não reutilize as palavras de uma carteira de criptomoedas.</string>
+
+    <!-- Teclado -->
+    <string name="cifra_bar_idle">Toque no cadeado para escrever em sigilo</string>
+    <string name="cifra_bar_to">Para: <xliff:g id="NAME" example="Maria">%s</xliff:g></string>
+    <string name="cifra_bar_encrypt">Cifrar</string>
+    <string name="cifra_bar_clipboard">Ler</string>
+    <string name="cifra_bar_clipboard_status">Mensagem cifrada copiada</string>
+    <string name="cifra_bar_unavailable">Desbloqueie o aparelho para usar o modo seguro</string>
+    <string name="cifra_compose_hint">Mensagem secreta para <xliff:g id="NAME" example="Maria">%s</xliff:g>. O app só recebe o texto cifrado.</string>
+    <string name="cifra_pick_recipient">Para quem é a mensagem?</string>
+    <string name="cifra_sending_as">Enviando como <xliff:g id="NAME" example="Trabalho">%s</xliff:g></string>
+    <string name="cifra_change_sender">Trocar a identidade que envia</string>
+    <string name="cifra_pick_sender">Enviar com qual identidade?</string>
+    <string name="cifra_manage_keys">Gerenciar chaves e contatos</string>
+    <string name="cifra_exit_secure">Sair do modo seguro e descartar o rascunho</string>
+    <string name="cifra_change_recipient">Trocar destinatário</string>
+    <string name="cifra_secure_menu">Modo seguro</string>
+    <string name="cifra_need_identity">Crie sua identidade primeiro, a partir das suas palavras BIP39.</string>
+    <string name="cifra_need_contact">Adicione primeiro a chave pública de alguém.</string>
+    <string name="cifra_encrypting">Cifrando…</string>
+    <string name="cifra_decrypting">Descriptografando…</string>
+    <string name="cifra_preview_title">Cifrada para <xliff:g id="NAME" example="Maria">%s</xliff:g></string>
+    <string name="cifra_preview_info">Só <xliff:g id="NAME" example="Maria">%s</xliff:g> consegue ler. O app vai receber apenas o texto abaixo.</string>
+    <string name="cifra_edit">Editar</string>
+    <string name="cifra_insert">Inserir no app</string>
+    <string name="cifra_pick_identity">Descriptografar com qual chave privada?</string>
+    <string name="cifra_try_all">Tentar todas</string>
+    <string name="cifra_from">De <xliff:g id="NAME" example="Maria">%s</xliff:g></string>
+    <string name="cifra_from_unverified">De <xliff:g id="NAME" example="Maria">%s</xliff:g> (chave não verificada)</string>
+    <string name="cifra_from_self">De você (<xliff:g id="NAME" example="Trabalho">%s</xliff:g>)</string>
+    <string name="cifra_read_info">Para <xliff:g id="NAME" example="Trabalho">%s</xliff:g>. Exibida só aqui: o app nunca vê este texto.</string>
+    <string name="cifra_close">Fechar</string>
+    <string name="cifra_reply">Responder</string>
+    <string name="cifra_decrypt_failed">Não foi possível descriptografar. A mensagem é para outra chave, ou quem enviou não está nos seus contatos.</string>
+    <string name="cifra_clipboard_invalid">A mensagem copiada está danificada ou incompleta.</string>
+    <string name="cifra_empty_message">Digite uma mensagem primeiro</string>
+    <string name="cifra_message_too_long">A mensagem é longa demais</string>
+    <string name="cifra_lock_content_description">Modo seguro</string>
+    <string name="cifra_clipboard_content_description">Ler a mensagem cifrada da área de transferência</string>
+    <string name="cifra_chars">%1$d caracteres</string>
+</resources>

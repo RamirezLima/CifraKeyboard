@@ -34,7 +34,7 @@
         android:title="@string/pref_use_on_screen"
         android:restrictionType="bool"
         android:description="@string/pref_use_on_screen_summary"
-        android:defaultValue="false" />
+        android:defaultValue="true" />
     <restriction
         android:key="pref_enable_ime_switch"
         android:title="@string/space_swipe"

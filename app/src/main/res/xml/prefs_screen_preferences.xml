@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Copyright (C) 2014 The Android Open Source Project
+     Copyright (C) 2026 Ramirez Lima
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -38,7 +39,7 @@
         android:key="pref_use_on_screen"
         android:title="@string/pref_use_on_screen"
         android:summary="@string/pref_use_on_screen_summary"
-        android:defaultValue="false" />
+        android:defaultValue="true" />
     <SwitchPreference
         android:key="pref_enable_ime_switch"
         android:title="@string/pref_enable_ime_switch"

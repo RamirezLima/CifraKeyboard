@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Settings: keys and contacts -->
+    <string name="cifra_settings_title">Keys and contacts</string>
+    <string name="cifra_settings_summary">Your identities (BIP39 words) and your contacts\' public keys</string>
+    <string name="cifra_identities">My identities</string>
+    <string name="cifra_add_identity">Add identity</string>
+    <string name="cifra_add_identity_summary">Type your 12 or 24 BIP39 words (English list), or generate new ones</string>
+    <string name="cifra_contacts">Contacts</string>
+    <string name="cifra_add_contact">Add contact</string>
+    <string name="cifra_add_contact_summary">Paste the public key someone shared with you</string>
+    <string name="cifra_security">Security</string>
+    <string name="cifra_wipe">Erase all keys</string>
+    <string name="cifra_wipe_summary">Deletes identities, contacts and the Keystore keys. Only your words can bring identities back.</string>
+    <string name="cifra_wipe_confirm">Erase all identities and contacts? This cannot be undone.</string>
+    <string name="cifra_wiped">All keys were erased</string>
+    <string name="cifra_no_identities">No identity yet</string>
+    <string name="cifra_no_contacts">No contacts yet</string>
+    <string name="cifra_default_identity">Default · sends your messages</string>
+    <string name="cifra_verified">Verified</string>
+    <string name="cifra_not_verified">Not verified</string>
+    <string name="cifra_fingerprint">Fingerprint: <xliff:g id="FINGERPRINT" example="12345 67890">%s</xliff:g></string>
+    <string name="cifra_public_key">Public key</string>
+    <string name="cifra_copy_public_key">Copy key</string>
+    <string name="cifra_share_public_key">Share</string>
+    <string name="cifra_share_text">My Cifra public key:\n<xliff:g id="KEY" example="cifra1...">%1$s</xliff:g>\nFingerprint: <xliff:g id="FINGERPRINT" example="12345 67890">%2$s</xliff:g></string>
+    <string name="cifra_copied">Public key copied</string>
+    <string name="cifra_delete">Delete</string>
+    <string name="cifra_delete_identity_confirm">Delete the identity \"<xliff:g id="NAME" example="Work">%s</xliff:g>\"? It can only be recovered with its words and passphrase.</string>
+    <string name="cifra_delete_contact_confirm">Delete the contact \"<xliff:g id="NAME" example="Maria">%s</xliff:g>\"?</string>
+    <string name="cifra_set_default">Use as default</string>
+    <string name="cifra_mark_verified">Mark as verified</string>
+    <string name="cifra_mark_unverified">Mark as not verified</string>
+    <string name="cifra_verify_hint">Before trusting this key, compare the fingerprint with <xliff:g id="NAME" example="Maria">%s</xliff:g> in person or on a call.</string>
+    <string name="cifra_contact_name_hint">Name</string>
+    <string name="cifra_contact_key_hint">Public key (cifra1…)</string>
+    <string name="cifra_invalid_public_key">No valid public key found</string>
+    <string name="cifra_duplicate_contact">This key is already saved</string>
+    <string name="cifra_duplicate_identity">This identity already exists</string>
+    <string name="cifra_name_required">Type a name</string>
+    <string name="cifra_rename">Rename</string>
+    <string name="cifra_error_locked">Unlock the device to use your keys</string>
+    <string name="cifra_error_key_lost">The protected key store was reset. Erase the keys and restore your identities from their words.</string>
+    <string name="cifra_error_generic">The operation failed</string>
+    <string name="cifra_no_lock_screen">This device has no screen lock: anyone holding it can use your keys.</string>
+    <string name="cifra_screen_reader_title">Allow screen readers in secure mode</string>
+    <string name="cifra_screen_reader_summary_off">Off: drafts, decrypted messages and contact names in the keyboard are hidden from every accessibility service, TalkBack included.</string>
+    <string name="cifra_screen_reader_summary_on">On: TalkBack can read secure mode. Other apps that use accessibility still cannot.</string>
+    <string name="cifra_screen_reader_summary_on_legacy">On: on this Android version, any installed accessibility service can read drafts, decrypted messages and contact names.</string>
+    <string name="cifra_about_title">How it works</string>
+    <string name="cifra_about_summary">Offline. Words and passphrases are never stored. Secret keys are sealed by the Android Keystore.</string>
+
+    <!-- About: privacy and license, shown in the app -->
+    <string name="cifra_license_summary">A fork of Simple Keyboard · Apache License 2.0</string>
+    <string name="cifra_license_text">Cifra Keyboard is a fork of Simple Keyboard (github.com/rkkr/simple-keyboard) by Raimondas Rimkus and contributors, which is based on the LatinIME keyboard of the Android Open Source Project. It is not affiliated with or endorsed by the Simple Keyboard authors.\n\nLicensed under the Apache License, Version 2.0 (apache.org/licenses/LICENSE-2.0). Distributed on an \"AS IS\" basis, without warranties or conditions of any kind.\n\nThird-party components:\n• Bouncy Castle Crypto APIs, MIT License\n• BIP39 English wordlist (bitcoin/bips), MIT License\n• Material icons, Apache License 2.0</string>
+    <string name="cifra_privacy_text">Cifra Keyboard has no internet permission and sends nothing anywhere: no analytics, no crash reports, no ads.\n\nOnly on this device, it keeps:\n• your identities: name, public key and the private key sealed by the Android Keystore;\n• your contacts: name and public key;\n• the keyboard settings.\n\nIt never stores your BIP39 words, your passphrase, or the messages you write or decrypt. It reads the clipboard only on this device, to find encrypted messages.\n\nBackups are disabled. \"Erase all keys\" deletes identities and contacts; uninstalling the app deletes everything.</string>
+
+    <!-- Identity setup -->
+    <string name="cifra_identity_setup_title">New identity</string>
+    <string name="cifra_identity_name_hint">Name (e.g. Work)</string>
+    <string name="cifra_mode_restore">I have words</string>
+    <string name="cifra_mode_generate">Generate new words</string>
+    <string name="cifra_words_hint">Type the words (English BIP39 list) separated by spaces</string>
+    <string name="cifra_words_12">12 words</string>
+    <string name="cifra_words_24">24 words</string>
+    <string name="cifra_generate">Generate</string>
+    <string name="cifra_generated_warning">Write these words on paper, in order, and keep them safe. Anyone with them (and the passphrase) can read your messages. They are not stored and will not be shown again.</string>
+    <string name="cifra_passphrase_hint">Passphrase (optional)</string>
+    <string name="cifra_passphrase_confirm_hint">Repeat the passphrase</string>
+    <string name="cifra_passphrase_explain">Each passphrase opens a different identity from the same words. Forgetting it means losing the identity.</string>
+    <string name="cifra_passphrase_mismatch">The passphrases do not match</string>
+    <string name="cifra_status_unknown_word">Word <xliff:g id="POSITION" example="3">%1$d</xliff:g> (\"<xliff:g id="WORD" example="abcd">%2$s</xliff:g>\") is not in the English BIP39 list</string>
+    <string name="cifra_status_bad_count">Use 12, 15, 18, 21 or 24 words (now <xliff:g id="COUNT" example="7">%1$d</xliff:g>)</string>
+    <string name="cifra_status_bad_checksum">These words are not a valid sequence (checksum). Check the order and spelling.</string>
+    <string name="cifra_status_valid">✓ <xliff:g id="COUNT" example="12">%1$d</xliff:g> valid words</string>
+    <string name="cifra_quiz">To confirm you wrote them down, type word #<xliff:g id="FIRST" example="3">%1$d</xliff:g> and word #<xliff:g id="SECOND" example="9">%2$d</xliff:g></string>
+    <string name="cifra_quiz_word_hint">Word #<xliff:g id="POSITION" example="3">%1$d</xliff:g></string>
+    <string name="cifra_quiz_failed">The words do not match. Check your notes.</string>
+    <string name="cifra_save_identity">Create identity</string>
+    <string name="cifra_deriving">Deriving keys…</string>
+    <string name="cifra_identity_created">Identity created</string>
+    <string name="cifra_reuse_warning">Do not reuse the words of a cryptocurrency wallet.</string>
+
+    <!-- Keyboard -->
+    <string name="cifra_bar_idle">Tap the lock to write in secret</string>
+    <string name="cifra_bar_to">To: <xliff:g id="NAME" example="Maria">%s</xliff:g></string>
+    <string name="cifra_bar_encrypt">Encrypt</string>
+    <string name="cifra_bar_clipboard">Read</string>
+    <string name="cifra_bar_clipboard_status">Encrypted message copied</string>
+    <string name="cifra_bar_unavailable">Unlock the device to use secure mode</string>
+    <string name="cifra_compose_hint">Secret message for <xliff:g id="NAME" example="Maria">%s</xliff:g>. The app only gets the encrypted text.</string>
+    <string name="cifra_pick_recipient">Who is the message for?</string>
+    <string name="cifra_sending_as">Sending as <xliff:g id="NAME" example="Work">%s</xliff:g></string>
+    <string name="cifra_change_sender">Change the identity that sends</string>
+    <string name="cifra_pick_sender">Send as which identity?</string>
+    <string name="cifra_manage_keys">Manage keys and contacts</string>
+    <string name="cifra_exit_secure">Leave secure mode and discard the draft</string>
+    <string name="cifra_change_recipient">Change recipient</string>
+    <string name="cifra_secure_menu">Secure mode</string>
+    <string name="cifra_need_identity">Create your identity first, from your BIP39 words.</string>
+    <string name="cifra_need_contact">Add someone\'s public key first.</string>
+    <string name="cifra_encrypting">Encrypting…</string>
+    <string name="cifra_decrypting">Decrypting…</string>
+    <string name="cifra_preview_title">Encrypted for <xliff:g id="NAME" example="Maria">%s</xliff:g></string>
+    <string name="cifra_preview_info">Only <xliff:g id="NAME" example="Maria">%s</xliff:g> can read it. The app will receive only the text below.</string>
+    <string name="cifra_edit">Edit</string>
+    <string name="cifra_insert">Insert in app</string>
+    <string name="cifra_pick_identity">Decrypt with which private key?</string>
+    <string name="cifra_try_all">Try all</string>
+    <string name="cifra_from">From <xliff:g id="NAME" example="Maria">%s</xliff:g></string>
+    <string name="cifra_from_unverified">From <xliff:g id="NAME" example="Maria">%s</xliff:g> (key not verified)</string>
+    <string name="cifra_from_self">From you (<xliff:g id="NAME" example="Work">%s</xliff:g>)</string>
+    <string name="cifra_read_info">To <xliff:g id="NAME" example="Work">%s</xliff:g>. Shown only here: the app never sees this text.</string>
+    <string name="cifra_close">Close</string>
+    <string name="cifra_reply">Reply</string>
+    <string name="cifra_decrypt_failed">Could not decrypt. The message is for another key, or its sender is not in your contacts.</string>
+    <string name="cifra_clipboard_invalid">The copied message is damaged or incomplete.</string>
+    <string name="cifra_empty_message">Type a message first</string>
+    <string name="cifra_message_too_long">The message is too long</string>
+    <string name="cifra_lock_content_description">Secure mode</string>
+    <string name="cifra_clipboard_content_description">Read the encrypted message in the clipboard</string>
+    <string name="cifra_chars">%1$d characters</string>
+</resources>

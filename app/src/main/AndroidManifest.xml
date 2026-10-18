@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Copyright (C) 2012 The Android Open Source Project
+     Copyright (C) 2026 Ramirez Lima
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -14,13 +15,20 @@
      limitations under the License.
 -->
 
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- The keyboard never talks to the network. Strip the permission even if a library asks. -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
 
+    <!-- No backups: the vault is useless without the Keystore keys, which never leave the
+         device, and contact lists are sensitive. -->
     <application
-        android:allowBackup="true"
-        android:fullBackupOnly="true"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
         android:icon="@drawable/ic_launcher"
         android:label="@string/english_ime_name"
         android:supportsRtl="true">
@@ -50,6 +58,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".crypto.IdentitySetupActivity"
+            android:exported="false"
+            android:label="@string/cifra_identity_setup_title"
+            android:theme="@style/platformSettingsTheme"
+            android:windowSoftInputMode="adjustResize" />
 
         <receiver
             android:name=".latin.SystemBroadcastReceiver"

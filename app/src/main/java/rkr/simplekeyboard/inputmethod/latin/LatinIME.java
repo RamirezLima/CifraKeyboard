@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2026 Ramirez Lima
  * Copyright (C) 2025 Raimondas Rimkus
  * Copyright (C) 2021 wittmane
  * Copyright (C) 2021 Maarten Trompper
@@ -34,6 +35,7 @@ import android.os.Build;
 import android.os.Debug;
 import android.os.IBinder;
 import android.os.Message;
+import android.preference.PreferenceActivity;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.util.Log;
@@ -45,6 +47,7 @@ import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
 import android.view.WindowInsetsController;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 
 import java.io.FileDescriptor;
@@ -54,6 +57,8 @@ import java.util.concurrent.TimeUnit;
 
 import rkr.simplekeyboard.inputmethod.compat.EditorInfoCompatUtils;
 import rkr.simplekeyboard.inputmethod.compat.PreferenceManagerCompat;
+import rkr.simplekeyboard.inputmethod.crypto.CryptoSettingsFragment;
+import rkr.simplekeyboard.inputmethod.crypto.SecureKeyboard;
 import rkr.simplekeyboard.inputmethod.event.Event;
 import rkr.simplekeyboard.inputmethod.event.InputTransaction;
 import rkr.simplekeyboard.inputmethod.keyboard.Keyboard;
@@ -69,6 +74,7 @@ import rkr.simplekeyboard.inputmethod.latin.settings.SettingsActivity;
 import rkr.simplekeyboard.inputmethod.latin.settings.SettingsValues;
 import rkr.simplekeyboard.inputmethod.latin.utils.ApplicationUtils;
 import rkr.simplekeyboard.inputmethod.latin.utils.LeakGuardHandlerWrapper;
+import rkr.simplekeyboard.inputmethod.latin.utils.RecapitalizeStatus;
 import rkr.simplekeyboard.inputmethod.latin.utils.ResourceUtils;
 import rkr.simplekeyboard.inputmethod.latin.utils.ViewLayoutUtils;
 
@@ -94,6 +100,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
 
     private RichInputMethodManager mRichImm;
     final KeyboardSwitcher mKeyboardSwitcher;
+    private SecureKeyboard mSecureKeyboard;
 
     private AlertDialog mOptionsDialog;
 
@@ -251,6 +258,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
 
     @Override
     public void onCreate() {
+        mSecureKeyboard = new SecureKeyboard(this);
         Settings.init(this);
         DebugFlags.init(PreferenceManagerCompat.getDeviceSharedPreferences(this));
         RichInputMethodManager.init(this);
@@ -259,6 +267,10 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         KeyboardSwitcher.init(this);
         AudioAndHapticFeedbackManager.init(this);
         super.onCreate();
+        // Nothing drawn by the keyboard (secure drafts, decrypted messages) may end up in
+        // screenshots, screen recordings or casts.
+        getWindow().getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        mSecureKeyboard.onCreate();
 
         // TODO: Resolve mutual dependencies of {@link #loadSettings()} and
         // {@link #resetDictionaryFacilitatorIfNecessary()}.
@@ -281,6 +293,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
 
     @Override
     public void onDestroy() {
+        mSecureKeyboard.onDestroy();
         mSettings.onDestroy();
         unregisterReceiver(mRingerModeChangeReceiver);
         super.onDestroy();
@@ -379,6 +392,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
 
     void onStartInputViewInternal(final EditorInfo editorInfo, final boolean restarting) {
         super.onStartInputView(editorInfo, restarting);
+        mSecureKeyboard.onStartInputView(editorInfo);
 
         // Switch to the null consumer to handle cases leading to early exit below, for which we
         // also wouldn't be consuming gesture data.
@@ -407,9 +421,6 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
                     + ", word caps = "
                     + ((editorInfo.inputType & InputType.TYPE_TEXT_FLAG_CAP_WORDS) != 0));
         }
-        Log.i(TAG, "Starting input. Cursor position = "
-                + editorInfo.initialSelStart + "," + editorInfo.initialSelEnd +
-                " Restarting = " + restarting);
 
         // In landscape mode, this method gets called without the input view being created.
         if (mainKeyboardView == null) {
@@ -472,6 +483,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     @Override
     public void onWindowHidden() {
         super.onWindowHidden();
+        mSecureKeyboard.onWindowHidden();
         final MainKeyboardView mainKeyboardView = mKeyboardSwitcher.getMainKeyboardView();
         if (mainKeyboardView != null) {
             mainKeyboardView.closing();
@@ -505,8 +517,6 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         if (keyboardView != null && keyboardView.isInCursorMove()) {
             return;
         }
-
-        Log.i(TAG, "Update Selection. Cursor position = " + newSelStart + "," + newSelEnd);
 
         mInputLogic.onUpdateSelection(newSelStart, newSelEnd);
         if (isInputViewShown()) {
@@ -621,12 +631,77 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     }
 
     int getCurrentAutoCapsState() {
+        if (isCapturingSecureInput()) {
+            return mSecureKeyboard.getCurrentAutoCapsState(mSettings.getCurrent());
+        }
         return mInputLogic.getCurrentAutoCapsState(mSettings.getCurrent(),
                 mRichImm.getCurrentSubtype().getKeyboardLayoutSet());
     }
 
     int getCurrentRecapitalizeState() {
+        if (isCapturingSecureInput()) {
+            return RecapitalizeStatus.NOT_A_RECAPITALIZE_MODE;
+        }
         return mInputLogic.getCurrentRecapitalizeState();
+    }
+
+    private boolean isCapturingSecureInput() {
+        return mSecureKeyboard != null && mSecureKeyboard.isCapturingInput();
+    }
+
+    public SecureKeyboard getSecureKeyboard() {
+        return mSecureKeyboard;
+    }
+
+    /**
+     * Called when secure mode starts or ends, as the shift state now follows another text.
+     */
+    public void onSecureInputChanged() {
+        if (mKeyboardSwitcher.getMainKeyboardView() != null) {
+            mKeyboardSwitcher.requestUpdatingShiftState(getCurrentAutoCapsState(),
+                    getCurrentRecapitalizeState());
+        }
+    }
+
+    /**
+     * Sends text approved by the user in secure mode (only ever ciphertext) to the app.
+     */
+    public void commitSecureText(final String text) {
+        mInputLogic.mConnection.commitText(text, 1);
+    }
+
+    @Override
+    public boolean onKeyDown(final int keyCode, final KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0
+                && isInputViewShown() && mSecureKeyboard.handleBack()) {
+            return true;
+        }
+        if (isCapturingSecureInput() && mSecureKeyboard.onHardwareKeyDown(event)) {
+            mKeyboardSwitcher.requestUpdatingShiftState(getCurrentAutoCapsState(),
+                    getCurrentRecapitalizeState());
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean onKeyUp(final int keyCode, final KeyEvent event) {
+        if (isCapturingSecureInput() && SecureKeyboard.isHardwareTextKey(event)) {
+            return true;
+        }
+        return super.onKeyUp(keyCode, event);
+    }
+
+    @Override
+    public boolean onKeyMultiple(final int keyCode, final int count, final KeyEvent event) {
+        // ACTION_MULTIPLE carries whole strings (e.g. from some physical keyboards).
+        if (isCapturingSecureInput()) {
+            if (keyCode == KeyEvent.KEYCODE_UNKNOWN && event.getCharacters() != null) {
+                mSecureKeyboard.onTextInput(event.getCharacters());
+            }
+            return true;
+        }
+        return super.onKeyMultiple(keyCode, count, event);
     }
 
     @Override
@@ -653,6 +728,9 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
 
     @Override
     public void onMoveCursorPointer(int steps) {
+        if (isCapturingSecureInput()) {
+            return;
+        }
         if (mInputLogic.mConnection.hasCursorPosition()) {
             if (TextUtils.getLayoutDirectionFromLocale(getCurrentLayoutLocale()) == View.LAYOUT_DIRECTION_RTL)
                 steps = -steps;
@@ -676,6 +754,9 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
 
     @Override
     public void onMoveDeletePointer(int steps) {
+        if (isCapturingSecureInput()) {
+            return;
+        }
         if (mInputLogic.mConnection.hasCursorPosition()) {
             steps = mInputLogic.mConnection.getUnicodeSteps(steps, false);
             if (steps == 0) {
@@ -694,12 +775,18 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
 
     @Override
     public void onUpWithDeletePointerActive() {
+        if (isCapturingSecureInput()) {
+            return;
+        }
         if (mInputLogic.mConnection.hasSelection())
             mInputLogic.mConnection.deleteSelectedText();
     }
 
     @Override
     public void onUpWithSpacePointerActive() {
+        if (isCapturingSecureInput()) {
+            return;
+        }
         mInputLogic.reloadTextCache();
     }
 
@@ -736,6 +823,15 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     // This method is public for testability of LatinIME, but also in the future it should
     // completely replace #onCodeInput.
     public void onEvent(final Event event) {
+        if (isCapturingSecureInput() && !SecureKeyboard.passesThrough(event)) {
+            // Secure mode: the key goes to the draft inside the keyboard, never to the app.
+            mSecureKeyboard.onEvent(event);
+            mKeyboardSwitcher.requestUpdatingShiftState(getCurrentAutoCapsState(),
+                    getCurrentRecapitalizeState());
+            mKeyboardSwitcher.onEvent(event, getCurrentAutoCapsState(),
+                    getCurrentRecapitalizeState());
+            return;
+        }
         final InputTransaction completeInputTransaction =
                 mInputLogic.onCodeInput(mSettings.getCurrent(), event);
         updateStateAfterInputTransaction(completeInputTransaction);
@@ -763,6 +859,14 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     public void onTextInput(final String rawText) {
         // TODO: have the keyboard pass the correct key code when we need it.
         final Event event = Event.createSoftwareTextEvent(rawText, Constants.CODE_OUTPUT_TEXT);
+        if (isCapturingSecureInput()) {
+            mSecureKeyboard.onTextInput(rawText);
+            mKeyboardSwitcher.requestUpdatingShiftState(getCurrentAutoCapsState(),
+                    getCurrentRecapitalizeState());
+            mKeyboardSwitcher.onEvent(event, getCurrentAutoCapsState(),
+                    getCurrentRecapitalizeState());
+            return;
+        }
         final InputTransaction completeInputTransaction =
                 mInputLogic.onTextInput(mSettings.getCurrent(), event);
         updateStateAfterInputTransaction(completeInputTransaction);
@@ -870,6 +974,14 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     };
 
     public void launchSettings() {
+        launchSettings(null);
+    }
+
+    public void launchCryptoSettings() {
+        launchSettings(CryptoSettingsFragment.class.getName());
+    }
+
+    private void launchSettings(final String fragmentName) {
         requestHideSelf(0);
         final MainKeyboardView mainKeyboardView = mKeyboardSwitcher.getMainKeyboardView();
         if (mainKeyboardView != null) {
@@ -877,6 +989,9 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         }
         final Intent intent = new Intent();
         intent.setClass(LatinIME.this, SettingsActivity.class);
+        if (fragmentName != null) {
+            intent.putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT, fragmentName);
+        }
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP);

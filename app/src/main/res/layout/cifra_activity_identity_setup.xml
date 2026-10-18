@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/cifra_setup_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:importantForAutofill="noExcludeDescendants">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <EditText
+            android:id="@+id/cifra_identity_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/cifra_identity_name_hint"
+            android:imeOptions="flagNoPersonalizedLearning"
+            android:inputType="textCapWords|textNoSuggestions" />
+
+        <RadioGroup
+            android:id="@+id/cifra_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical">
+
+            <RadioButton
+                android:id="@+id/cifra_mode_restore"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="@string/cifra_mode_restore" />
+
+            <RadioButton
+                android:id="@+id/cifra_mode_generate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/cifra_mode_generate" />
+        </RadioGroup>
+
+        <!-- Restore from existing words -->
+        <LinearLayout
+            android:id="@+id/cifra_restore_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <MultiAutoCompleteTextView
+                android:id="@+id/cifra_words"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:completionThreshold="2"
+                android:gravity="top|left"
+                android:hint="@string/cifra_words_hint"
+                android:imeOptions="flagNoPersonalizedLearning|flagNoExtractUi"
+                android:inputType="textMultiLine|textNoSuggestions|textVisiblePassword"
+                android:minLines="3" />
+
+            <TextView
+                android:id="@+id/cifra_words_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- Generate new words -->
+        <LinearLayout
+            android:id="@+id/cifra_generate_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <RadioGroup
+                    android:id="@+id/cifra_word_count"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/cifra_words_12"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/cifra_words_12" />
+
+                    <RadioButton
+                        android:id="@+id/cifra_words_24"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="16dp"
+                        android:checked="true"
+                        android:text="@string/cifra_words_24" />
+                </RadioGroup>
+
+                <Button
+                    android:id="@+id/cifra_generate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/cifra_generate" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/cifra_generated_words"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="monospace"
+                android:lineSpacingExtra="4dp"
+                android:textSize="16sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/cifra_generated_warning"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/cifra_generated_warning"
+                android:textColor="@color/cifra_warning"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/cifra_quiz_section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/cifra_quiz_prompt"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="14sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <EditText
+                        android:id="@+id/cifra_quiz_first"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:imeOptions="flagNoPersonalizedLearning"
+                        android:inputType="textNoSuggestions|textVisiblePassword" />
+
+                    <EditText
+                        android:id="@+id/cifra_quiz_second"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="8dp"
+                        android:layout_weight="1"
+                        android:imeOptions="flagNoPersonalizedLearning"
+                        android:inputType="textNoSuggestions|textVisiblePassword" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Passphrase -->
+        <EditText
+            android:id="@+id/cifra_passphrase"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="@string/cifra_passphrase_hint"
+            android:imeOptions="flagNoPersonalizedLearning"
+            android:inputType="textPassword" />
+
+        <EditText
+            android:id="@+id/cifra_passphrase_confirm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/cifra_passphrase_confirm_hint"
+            android:imeOptions="flagNoPersonalizedLearning"
+            android:inputType="textPassword" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/cifra_passphrase_explain"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/cifra_reuse_warning"
+            android:textSize="13sp" />
+
+        <ProgressBar
+            android:id="@+id/cifra_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/cifra_save_identity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/cifra_save_identity" />
+    </LinearLayout>
+</ScrollView>

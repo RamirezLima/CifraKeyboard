@@ -50,7 +50,7 @@
     <string name="show_number_row">Számok megjelenítése külön sorban</string>
     <string name="space_swipe">Kurzor mozgatása a Szóköz billentytűn történő húzással</string>
     <string name="delete_swipe">Törlés a Törlés billenytűről való húzással</string>
-    <string name="setup_message">Az Egyszerű billentyűzet nincs engedélyezve. Kattintson az OK gombra a Nyelvek és beviteli beállítások &amp; megnyitásához. A használatához ki kell választania az Egyszerű billentyűzetet az aktuális billentyűzetén.</string>
+    <string name="setup_message">A Cifra Keyboard nincs engedélyezve. Kattintson az OK gombra a Nyelvek és beviteli beállítások &amp; megnyitásához. A használatához ki kell választania a Cifra Keyboardot az aktuális billentyűzetén.</string>
     <string name="user_languages">Hozzáadott nyelvek</string>
     <string name="add_language">Nyelv hozzáadása</string>
     <string name="remove_language">Nyelv eltávolítása</string>

@@ -49,7 +49,7 @@
     <string name="show_number_row">Mostra una fila de números separada</string>
     <string name="space_swipe">Moviment del cursor amb lliscament espacial</string>
     <string name="delete_swipe">Lliscar per suprimir</string>
-    <string name="setup_message">Simple Keyboard no està habilitat. Feu clic a OK per obrir la configuració &amp; d\'idiomes i entrada. Haureu de seleccionar Simple Keyboard al vostre teclat actual per utilitzar-lo.</string>
+    <string name="setup_message">Cifra Keyboard no està habilitat. Feu clic a OK per obrir la configuració &amp; d\'idiomes i entrada. Haureu de seleccionar Cifra Keyboard al vostre teclat actual per utilitzar-lo.</string>
     <string name="settings_screen_key_press">Premsa de tecles</string>
     <string name="user_languages">Idiomes de teclat activats</string>
     <string name="add_language">Afegeix un idioma</string>

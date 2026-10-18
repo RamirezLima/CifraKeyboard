@@ -3,6 +3,7 @@
 /*
 **
 ** Copyright 2011, The Android Open Source Project
+** Copyright 2026, Ramirez Lima
 ** Copyright 2026, Raimondas Rimkus
 **
 ** Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,11 +25,30 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     style="?attr/inputViewStyle">
-    <rkr.simplekeyboard.inputmethod.keyboard.MainKeyboardView
-        android:id="@+id/keyboard_view"
-        android:layoutDirection="ltr"
-        android:layout_gravity="bottom"
+    <!-- Everything the user can see and touch: the secure-mode bar, the draft being written in
+         secure mode and the keys. Its height is what the IME reports as its insets. -->
+    <LinearLayout
+        android:id="@+id/keyboard_frame"
         android:orientation="vertical"
+        android:layout_gravity="bottom"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content">
+        <include layout="@layout/cifra_bar" />
+        <include layout="@layout/cifra_compose" />
+        <FrameLayout
+            android:id="@+id/keyboard_area"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <rkr.simplekeyboard.inputmethod.keyboard.MainKeyboardView
+                android:id="@+id/keyboard_view"
+                android:layoutDirection="ltr"
+                android:layout_gravity="bottom"
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+            <!-- Covers the keys with the same height for pickers, previews and decrypted
+                 messages, so the app below does not jump. -->
+            <include layout="@layout/cifra_overlay" />
+        </FrameLayout>
+    </LinearLayout>
 </rkr.simplekeyboard.inputmethod.latin.InputView>

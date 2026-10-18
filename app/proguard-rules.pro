@@ -20,3 +20,13 @@
 -keep class rkr.simplekeyboard.inputmethod.latin.settings.SettingsFragment
 -keep class rkr.simplekeyboard.inputmethod.latin.settings.LanguagesSettingsFragment
 -keep class rkr.simplekeyboard.inputmethod.latin.settings.SingleLanguageSettingsFragment
+-keep class rkr.simplekeyboard.inputmethod.crypto.CryptoSettingsFragment
+
+# Release builds keep no informational logs: logcat ends up in bug reports and is readable over
+# USB debugging. Warnings and errors stay for diagnosis and never include typed text.
+-assumenosideeffects class android.util.Log {
+    public static boolean isLoggable(java.lang.String, int);
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+}

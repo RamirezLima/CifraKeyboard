@@ -1,27 +1,26 @@
-This keyboard is created for those who only need a keyboard and nothing more.
+Cifra Keyboard encrypts your messages inside the keyboard, before any app receives them. Chat and e-mail apps only ever see encrypted text, so your privacy does not depend on their encryption.
 
-To enable the keyboard:
+<b>Cifra Keyboard is a fork of Simple Keyboard</b> by Raimondas Rimkus and contributors, which is based on the AOSP LatinIME keyboard. It is not affiliated with or endorsed by the Simple Keyboard authors.
 
-* Open "Simple Keyboard" from your launcher
-* Enable the Simple Keyboard (default system warning about tracking will be shown)
-* Switch to Simple Keyboard from current Input Method (differs between keyboards, usually long-press space)
-* To edit Simple Keyboard settings long-press "," or open system Settings, Languages &amp; Input, Simple Keyboard.
-* You can enable/disable all the input methods in Settings, Languages &amp; Input, Manage Keyboards (differs between phones)
+<b>Warning:</b> Cifra Keyboard is in development and has not been independently audited.
 
-<b>Features:</b>
+<b>How it works:</b>
 
-* Small size (&lt;1MB)
-* Adjustable keyboard height for more screen space
+* Create an identity from 12 or 24 BIP39 words (English list) and an optional passphrase. The words are never stored.
+* Add your contacts' public keys and compare their fingerprints.
+* Tap the lock, pick a contact and type. The text stays inside the keyboard until you tap Encrypt and approve the result.
+* Copy an encrypted message you received and tap Read: the text is shown only inside the keyboard.
+
+<b>Security:</b>
+
+* No internet permission, no backups
+* Private keys sealed by the Android Keystore (StrongBox when available)
+* Screenshots and screen recording blocked on the keyboard
+* HPKE (RFC 9180) with X25519 and ChaCha20-Poly1305
+
+<b>Inherited from Simple Keyboard:</b>
+
+* Adjustable keyboard height
 * Number row
-* Swipe space to move pointer
-* Delete swipe
+* Swipe space to move the cursor, delete swipe
 * Custom theme colors
-* Minimal permissions (only Vibrate)
-* Ads-free
-
-<b>Features it doesn’t have and probably will never have:</b>
-
-* Emojis
-* GIFs
-* Spell checker
-* Swipe typing

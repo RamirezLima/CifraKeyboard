@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Copyright (C) 2008 The Android Open Source Project
+     Copyright (C) 2026 Ramirez Lima
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -17,6 +18,11 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     android:key="english_ime_settings">
     <PreferenceScreen
+        android:fragment="rkr.simplekeyboard.inputmethod.crypto.CryptoSettingsFragment"
+        android:title="@string/cifra_settings_title"
+        android:summary="@string/cifra_settings_summary"
+        android:key="screen_crypto" />
+    <PreferenceScreen
         android:fragment="rkr.simplekeyboard.inputmethod.latin.settings.PreferencesSettingsFragment"
         android:title="@string/settings_screen_preferences"
         android:key="screen_preferences" />
@@ -33,5 +39,6 @@
         android:key="privacy_policy" />
     <Preference
         android:title="@string/license"
+        android:summary="@string/cifra_license_summary"
         android:key="license" />
 </PreferenceScreen>
