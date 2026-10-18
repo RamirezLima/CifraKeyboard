@@ -34,6 +34,21 @@
         android:textColor="?attr/functionalTextColor"
         android:textSize="14sp" />
 
+    <!-- QR codes for a cold phone. Only when turned on in the settings. -->
+    <ImageView
+        android:id="@+id/cifra_qr_button"
+        android:layout_width="40dp"
+        android:layout_height="36dp"
+        android:layout_marginLeft="4dp"
+        android:background="@drawable/cifra_button_background"
+        android:clickable="true"
+        android:contentDescription="@string/cifra_qr_content_description"
+        android:padding="7dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_cifra_qr"
+        android:tint="?attr/functionalTextColor"
+        android:visibility="gone" />
+
     <!-- The "encrypted message in the clipboard" key. Only visible when there is one. -->
     <TextView
         android:id="@+id/cifra_clipboard_button"

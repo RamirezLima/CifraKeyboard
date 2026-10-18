@@ -13,6 +13,7 @@ Cifra Keyboard encrypts your messages inside the keyboard, before any app receiv
 
 <b>Security:</b>
 
+* Optional cold phone: keys stay on a second phone that never goes online, and encrypted messages travel by QR code
 * No internet permission, no backups
 * Private keys sealed by the Android Keystore (StrongBox when available)
 * Screenshots and screen recording blocked on the keyboard

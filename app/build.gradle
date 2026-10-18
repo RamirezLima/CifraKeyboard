@@ -33,6 +33,8 @@ dependencies {
     // Lightweight API only (X25519, HPKE, ChaCha20-Poly1305, PBKDF2). No JCA provider is
     // registered, so R8 can strip everything that is not referenced.
     implementation 'org.bouncycastle:bcprov-jdk18on:1.80.2'
+    // QR codes for the cold phone: pure Java, no Android or network code.
+    implementation 'com.google.zxing:core:3.5.4'
 
     testImplementation 'junit:junit:4.13.2'
 }

@@ -54,14 +54,15 @@ public final class AuthActivity extends Activity {
             return;
         }
         final CharSequence title = getIntent().getCharSequenceExtra(EXTRA_TITLE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        // Android 9's prompt cannot fall back to the screen lock, so it gets the older screen.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             showBiometricPrompt(title);
         } else {
             showConfirmCredential(title);
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.P)
+    @TargetApi(Build.VERSION_CODES.Q)
     private void showBiometricPrompt(final CharSequence title) {
         final BiometricPrompt.Builder builder = new BiometricPrompt.Builder(this)
                 .setTitle(title)

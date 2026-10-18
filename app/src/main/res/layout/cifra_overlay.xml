@@ -63,6 +63,13 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- Above the body: the preview's options must not hide below a long ciphertext. -->
+            <LinearLayout
+                android:id="@+id/cifra_overlay_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
             <TextView
                 android:id="@+id/cifra_overlay_body"
                 android:layout_width="match_parent"
@@ -73,14 +80,18 @@
                 android:textIsSelectable="false"
                 android:textSize="16sp"
                 android:visibility="gone" />
-
-            <LinearLayout
-                android:id="@+id/cifra_overlay_list"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical" />
         </LinearLayout>
     </ScrollView>
+
+    <!-- A QR code for the camera of the other phone. Takes the place of the scroll area. -->
+    <ImageView
+        android:id="@+id/cifra_overlay_qr"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:contentDescription="@string/cifra_qr_image_description"
+        android:scaleType="fitCenter"
+        android:visibility="gone" />
 
     <LinearLayout
         android:id="@+id/cifra_overlay_buttons"
