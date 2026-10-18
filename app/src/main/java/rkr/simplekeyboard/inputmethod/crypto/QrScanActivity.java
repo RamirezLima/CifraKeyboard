@@ -136,6 +136,9 @@ public final class QrScanActivity extends Activity implements TextureView.Surfac
     private volatile boolean mFound;
     /** Camera thread only. */
     private byte[] mLuminance;
+    /** Camera thread only: the parts of a message read so far. */
+    private final QrCodes.Assembler mAssembler = new QrCodes.Assembler();
+    private int mShownParts = -1;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -241,8 +244,8 @@ public final class QrScanActivity extends Activity implements TextureView.Surfac
     // Camera
 
     private void openCamera() {
-        if (mCamera != null) {
-            return;
+        if (mCamera != null || mFrames != null) {
+            return; // Already open, or opening.
         }
         final CameraManager manager = getSystemService(CameraManager.class);
         boolean locked = false;
@@ -511,6 +514,17 @@ public final class QrScanActivity extends Activity implements TextureView.Surfac
         if (content == null) {
             return;
         }
+        if (mKind == KIND_MESSAGE && QrCodes.isPart(content)) {
+            final byte[] wire = mAssembler.add(content);
+            if (wire == null) {
+                showProgress();
+                return;
+            }
+            mFound = true;
+            final QrCodes.Content message = new QrCodes.Content(wire, null);
+            runOnUiThread(() -> finishWith(message));
+            return;
+        }
         final boolean wanted = mKind == KIND_KEY ? QrCodes.publicKey(content) != null
                 : QrCodes.messageWire(content) != null;
         if (!wanted) {
@@ -520,6 +534,16 @@ public final class QrScanActivity extends Activity implements TextureView.Surfac
         }
         mFound = true;
         runOnUiThread(() -> finishWith(content));
+    }
+
+    private void showProgress() {
+        final int received = mAssembler.received();
+        if (received == mShownParts) {
+            return;
+        }
+        mShownParts = received;
+        final String progress = getString(R.string.cifra_qr_parts, received, mAssembler.total());
+        runOnUiThread(() -> mStatus.setText(progress));
     }
 
     private void showStatus(final int message) {

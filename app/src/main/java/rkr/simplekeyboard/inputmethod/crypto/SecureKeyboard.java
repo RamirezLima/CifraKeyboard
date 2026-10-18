@@ -27,6 +27,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -63,6 +64,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.google.zxing.common.BitMatrix;
+
 import rkr.simplekeyboard.inputmethod.R;
 import rkr.simplekeyboard.inputmethod.compat.PreferenceManagerCompat;
 import rkr.simplekeyboard.inputmethod.event.Event;
@@ -87,6 +90,8 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     private static final long CARET_BLINK_MILLIS = 500;
     /** Word joiner: invisible and keeps the caret on the line of the last word. */
     private static final char CARET_PLACEHOLDER = '\u2060';
+    /** Each code of a message's loop stays this long: time for a camera to focus and read it. */
+    private static final long QR_FRAME_MILLIS = 250;
     /** The hint is the text color at this opacity, so it never looks like typed text. */
     private static final int HINT_ALPHA_PERCENT = 55;
     private static final int MAX_DRAFT_CHARS = CifraCrypto.MAX_PLAINTEXT_BYTES / 4;
@@ -169,6 +174,7 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     private final Handler mHandler = new Handler(Looper.getMainLooper());
     private final Runnable mEndSessionRunnable = this::endSession;
     private final Runnable mBlinkRunnable = this::blinkCaret;
+    private final Runnable mQrFrameRunnable = this::nextQrCode;
     private final BroadcastReceiver mScreenOffReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(final Context context, final Intent intent) {
@@ -198,6 +204,9 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     private ImageView mOverlayQr;
     /** The keyboard window is at full brightness and kept on, for a QR code. */
     private boolean mQrScreen;
+    /** The loop of codes on screen, and the one showing. */
+    private List<Drawable> mQrCodes;
+    private int mQrIndex;
 
     private Mode mMode = Mode.IDLE;
     /** True while the keys are captured into {@link #mDraft}, including under an overlay. */
@@ -845,11 +854,25 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
             return;
         }
         mOverlayScroll.setVisibility(View.GONE);
-        mOverlayQr.setImageDrawable(QrViews.drawable(mIme.getResources(),
-                QrCodes.encodeMessage(wire)));
+        mQrCodes = new ArrayList<>();
+        for (final BitMatrix code : QrCodes.encodeMessage(wire)) {
+            mQrCodes.add(QrViews.drawable(mIme.getResources(), code));
+        }
+        mQrIndex = 0;
+        mOverlayQr.setImageDrawable(mQrCodes.get(0));
         mOverlayQr.setVisibility(View.VISIBLE);
         setButtons(null, null, mIme.getString(R.string.cifra_close), this::closeOverlay);
         setQrScreen(true);
+        mHandler.postDelayed(mQrFrameRunnable, QR_FRAME_MILLIS);
+    }
+
+    private void nextQrCode() {
+        if (mMode != Mode.QR_SHOW || mQrCodes == null || mOverlayQr == null) {
+            return;
+        }
+        mQrIndex = (mQrIndex + 1) % mQrCodes.size();
+        mOverlayQr.setImageDrawable(mQrCodes.get(mQrIndex));
+        mHandler.postDelayed(mQrFrameRunnable, QR_FRAME_MILLIS);
     }
 
     /** Full brightness and no screen timeout while a QR code is on screen. */
@@ -1242,6 +1265,8 @@ public final class SecureKeyboard implements ClipboardManager.OnPrimaryClipChang
     }
 
     private void hideQr() {
+        mHandler.removeCallbacks(mQrFrameRunnable);
+        mQrCodes = null;
         mOverlayQr.setImageDrawable(null);
         mOverlayQr.setVisibility(View.GONE);
         mOverlayScroll.setVisibility(View.VISIBLE);

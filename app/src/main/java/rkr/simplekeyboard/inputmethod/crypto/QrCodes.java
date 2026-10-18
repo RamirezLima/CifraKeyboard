@@ -33,6 +33,10 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
@@ -42,21 +46,32 @@ import java.util.Map;
  * QR codes between a phone with internet and a cold phone that never goes online.
  *
  * Only encrypted messages and public keys travel this way: the cold phone is where messages are
- * written and read. Messages go as their binary wire format, a third smaller than the armored
- * text; public keys go as their "cifra1..." text. One QR code per message: {@link #MAX_BYTES}
- * keeps it at version 20 (97 × 97 modules), which a phone camera still reads from another
- * phone's screen.
+ * written and read. Public keys go as their "cifra1..." text in one small code.
+ *
+ * A message goes as a loop of small codes, each with a part of its binary wire format. One dense
+ * code would be enough, but a phone camera pointed at another phone's screen is often slightly
+ * out of focus, and ZXing loses dense codes long before small ones: with about 115 bytes per
+ * code, the modules are half again as large and survive twice the blur. The reader collects
+ * the parts in any order.
+ *
+ * Each part: "CQ", version 1, the first 4 bytes of the message's SHA-256, the part's index and
+ * the number of parts (1 byte each), the message length (2 bytes), and the data, all parts the
+ * same size so the codes do not change size as they cycle.
  */
 public final class QrCodes {
-    /** Byte capacity of a version 20 QR code at error correction level L. */
-    public static final int MAX_BYTES = 858;
+    /** Message bytes per code: with the header, a version 6 code (41 × 41 modules). */
+    static final int PART_DATA = 110;
+    static final int PART_HEADER = 11;
+    /** About 5 seconds per loop at 4 codes per second. */
+    public static final int MAX_PARTS = 20;
     /**
-     * Largest plaintext, in UTF-8 bytes, whose message fits {@link #MAX_BYTES} in both formats:
-     * three padding blocks minus the length prefix.
+     * Largest plaintext, in UTF-8 bytes, whose message fits {@link #MAX_PARTS} codes in both
+     * formats: eight padding blocks minus the length prefix.
      */
-    public static final int MAX_PLAINTEXT_BYTES = 3 * CifraCrypto.PADDING_BLOCK - 4;
+    public static final int MAX_PLAINTEXT_BYTES = 8 * CifraCrypto.PADDING_BLOCK - 4;
     /** Blank modules around the code, as the QR specification asks. */
     static final int QUIET_ZONE = 4;
+    private static final byte[] PART_MAGIC = { 'C', 'Q', 1 };
 
     /** What a QR code carried. */
     public static final class Content {
@@ -75,21 +90,146 @@ public final class QrCodes {
     }
 
     public static boolean fits(final byte[] wire) {
-        return wire.length <= MAX_BYTES;
+        return wire.length > 0 && wire.length <= MAX_PARTS * PART_DATA;
     }
 
     /**
-     * Encodes a message in its wire format, one module per bit plus the quiet zone.
+     * Encodes a message as its loop of codes, one module per bit plus the quiet zone.
      *
-     * @throws IllegalArgumentException if the message does not fit one QR code.
+     * @throws IllegalArgumentException if the message needs more than {@link #MAX_PARTS} codes.
      */
-    public static BitMatrix encodeMessage(final byte[] wire) {
-        if (!fits(wire)) {
-            throw new IllegalArgumentException("Message too long for a QR code");
+    public static List<BitMatrix> encodeMessage(final byte[] wire) {
+        final List<BitMatrix> codes = new ArrayList<>();
+        for (final byte[] part : split(wire)) {
+            // Without a character set hint the bytes go in byte mode as ISO-8859-1, which maps
+            // each byte to one character, and no ECI header takes room.
+            codes.add(encode(new String(part, StandardCharsets.ISO_8859_1),
+                    ErrorCorrectionLevel.L));
         }
-        // Without a character set hint the bytes go in byte mode as ISO-8859-1, which maps each
-        // byte to one character, and no ECI header takes room.
-        return encode(new String(wire, StandardCharsets.ISO_8859_1), ErrorCorrectionLevel.L);
+        return codes;
+    }
+
+    static byte[][] split(final byte[] wire) {
+        if (!fits(wire)) {
+            throw new IllegalArgumentException("Message too long for QR codes");
+        }
+        final int count = (wire.length + PART_DATA - 1) / PART_DATA;
+        final int size = (wire.length + count - 1) / count;
+        final int id = messageId(wire);
+        final byte[][] parts = new byte[count][];
+        for (int i = 0; i < count; i++) {
+            // The last part is padded with zeros; the length in the header cuts them off.
+            final byte[] part = new byte[PART_HEADER + size];
+            System.arraycopy(PART_MAGIC, 0, part, 0, PART_MAGIC.length);
+            part[3] = (byte) (id >>> 24);
+            part[4] = (byte) (id >>> 16);
+            part[5] = (byte) (id >>> 8);
+            part[6] = (byte) id;
+            part[7] = (byte) i;
+            part[8] = (byte) count;
+            part[9] = (byte) (wire.length >>> 8);
+            part[10] = (byte) wire.length;
+            final int offset = i * size;
+            System.arraycopy(wire, offset, part, PART_HEADER,
+                    Math.min(size, wire.length - offset));
+            parts[i] = part;
+        }
+        return parts;
+    }
+
+    private static int messageId(final byte[] wire) {
+        try {
+            final byte[] hash = MessageDigest.getInstance("SHA-256").digest(wire);
+            return ((hash[0] & 0xff) << 24) | ((hash[1] & 0xff) << 16) | ((hash[2] & 0xff) << 8)
+                    | (hash[3] & 0xff);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** @return whether a code is one part of a message. */
+    public static boolean isPart(final Content content) {
+        final byte[] bytes = content == null ? null : content.mBytes;
+        if (bytes == null || bytes.length <= PART_HEADER) {
+            return false;
+        }
+        for (int i = 0; i < PART_MAGIC.length; i++) {
+            if (bytes[i] != PART_MAGIC[i]) {
+                return false;
+            }
+        }
+        final int index = bytes[7] & 0xff;
+        final int count = bytes[8] & 0xff;
+        final int length = ((bytes[9] & 0xff) << 8) | (bytes[10] & 0xff);
+        final int size = bytes.length - PART_HEADER;
+        return count > 0 && count <= MAX_PARTS && index < count && length > 0
+                && length <= count * size && length > (count - 1) * size;
+    }
+
+    /** Puts a message back together from its codes, read in any order and any number of times. */
+    public static final class Assembler {
+        private int mId;
+        private int mLength;
+        private byte[][] mParts;
+        private int mReceived;
+
+        /** @return the whole message once its last missing part arrives, otherwise null. */
+        public byte[] add(final Content content) {
+            if (!isPart(content)) {
+                return null;
+            }
+            final byte[] bytes = content.mBytes;
+            final int id = ((bytes[3] & 0xff) << 24) | ((bytes[4] & 0xff) << 16)
+                    | ((bytes[5] & 0xff) << 8) | (bytes[6] & 0xff);
+            final int index = bytes[7] & 0xff;
+            final int count = bytes[8] & 0xff;
+            final int length = ((bytes[9] & 0xff) << 8) | (bytes[10] & 0xff);
+            if (mParts == null || id != mId || count != mParts.length || length != mLength) {
+                // Another message: start over.
+                mId = id;
+                mLength = length;
+                mParts = new byte[count][];
+                mReceived = 0;
+            }
+            if (mParts[index] == null) {
+                mParts[index] = Arrays.copyOfRange(bytes, PART_HEADER, bytes.length);
+                mReceived++;
+            }
+            if (mReceived < count) {
+                return null;
+            }
+            final byte[] wire = new byte[length];
+            int offset = 0;
+            for (final byte[] part : mParts) {
+                final int n = Math.min(part.length, length - offset);
+                if (n < 0 || part.length != mParts[0].length) {
+                    reset();
+                    return null;
+                }
+                System.arraycopy(part, 0, wire, offset, n);
+                offset += n;
+            }
+            if (offset != length || messageId(wire) != id) {
+                // A damaged part: read the whole loop again.
+                reset();
+                return null;
+            }
+            reset();
+            return wire;
+        }
+
+        public int received() {
+            return mReceived;
+        }
+
+        public int total() {
+            return mParts == null ? 0 : mParts.length;
+        }
+
+        private void reset() {
+            mParts = null;
+            mReceived = 0;
+        }
     }
 
     /** Encodes a short text, such as a public key. */
@@ -149,8 +289,9 @@ public final class QrCodes {
     }
 
     /**
-     * @return the wire bytes of the Cifra message in a QR code, or null if it has none. Also
-     *     accepts the armored text, as another app would show it.
+     * @return the wire bytes of a Cifra message in a single QR code, or null if it has none:
+     *     the wire format, as the first version of the cold phone showed it, or the armored text,
+     *     as another app would show it. Messages in parts go through {@link Assembler}.
      */
     public static byte[] messageWire(final Content content) {
         if (content == null) {

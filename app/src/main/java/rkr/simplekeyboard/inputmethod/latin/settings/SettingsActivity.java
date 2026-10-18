@@ -33,16 +33,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.WindowManager;
-import android.view.inputmethod.InputMethodInfo;
-import android.view.inputmethod.InputMethodManager;
 
 import rkr.simplekeyboard.inputmethod.R;
+import rkr.simplekeyboard.inputmethod.crypto.KeyboardCheck;
 import rkr.simplekeyboard.inputmethod.crypto.KeystoreCapabilities;
 import rkr.simplekeyboard.inputmethod.latin.utils.FragmentUtils;
 
 public class SettingsActivity extends PreferenceActivity {
     private static final String DEFAULT_FRAGMENT = SettingsFragment.class.getName();
     private static final String TAG = SettingsActivity.class.getSimpleName();
+    /** Opening the app offers to switch to Cifra once, not every time the window gets focus. */
+    private boolean mOfferKeyboardSwitch;
 
     @Override
     protected void onStart() {
@@ -50,7 +51,7 @@ public class SettingsActivity extends PreferenceActivity {
 
         boolean enabled = false;
         try {
-            enabled = isInputMethodOfThisImeEnabled();
+            enabled = KeyboardCheck.state(this) != KeyboardCheck.State.NOT_ENABLED;
         } catch (Exception e) {
             Log.e(TAG, "Exception in check if input method is enabled", e);
         }
@@ -78,25 +79,26 @@ public class SettingsActivity extends PreferenceActivity {
         }
     }
 
-    /**
-     * Check if this IME is enabled in the system.
-     * @return whether this IME is enabled in the system.
-     */
-    private boolean isInputMethodOfThisImeEnabled() {
-        final InputMethodManager imm =
-                (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        final String imePackageName = getPackageName();
-        for (final InputMethodInfo imi : imm.getEnabledInputMethodList()) {
-            if (imi.getPackageName().equals(imePackageName)) {
-                return true;
+    @Override
+    public void onWindowFocusChanged(final boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        // The system list of keyboards only opens for the app whose window has the focus.
+        if (hasFocus && mOfferKeyboardSwitch) {
+            mOfferKeyboardSwitch = false;
+            try {
+                if (KeyboardCheck.state(this) == KeyboardCheck.State.NOT_CURRENT) {
+                    KeyboardCheck.showPicker(this);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Exception in check if input method is in use", e);
             }
         }
-        return false;
     }
 
     @Override
     protected void onCreate(final Bundle savedState) {
         super.onCreate(savedState);
+        mOfferKeyboardSwitch = savedState == null;
         // Key and contact screens must not appear in screenshots or the recents preview.
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
         // First launch (and after system updates): find out what the secure hardware can do.

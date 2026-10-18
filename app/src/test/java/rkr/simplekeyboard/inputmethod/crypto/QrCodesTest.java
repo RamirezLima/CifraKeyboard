@@ -28,8 +28,12 @@ import com.google.zxing.common.BitMatrix;
 
 import org.junit.Test;
 
-import java.security.SecureRandom;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
 public class QrCodesTest {
     private static final CifraCrypto.KeyPair ANA = CifraCrypto.deriveKeyPair(Bip39.toSeed(
@@ -63,43 +67,102 @@ public class QrCodesTest {
         return new String(chars);
     }
 
-    @Test
-    public void largestPayloadRoundTripsAtVersion20() {
-        final byte[] wire = new byte[QrCodes.MAX_BYTES];
-        new SecureRandom().nextBytes(wire);
-        final BitMatrix matrix = QrCodes.encodeMessage(wire);
-        assertEquals(20, version(matrix));
-        final QrCodes.Content content = scan(matrix);
-        assertNotNull(content);
-        assertArrayEquals(wire, content.mBytes);
+    private static byte[] ratchetMessage(final String text) {
+        return Ratchet.encrypt(Ratchet.startAsInitiator(ANA, "ana", BETO.mPublicKey, "beto", 1),
+                text, 1);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void oneByteMoreDoesNotFit() {
-        QrCodes.encodeMessage(new byte[QrCodes.MAX_BYTES + 1]);
-    }
-
-    @Test
-    public void longestMessagesFitInBothFormats() throws Exception {
-        final String longest = text(QrCodes.MAX_PLAINTEXT_BYTES);
-        final byte[] ratchet = Ratchet.encrypt(Ratchet.startAsInitiator(ANA, "ana",
-                BETO.mPublicKey, "beto", 1), longest, 1);
-        final byte[] classic = CifraCrypto.seal(longest, BETO.mPublicKey, ANA);
-        assertTrue(QrCodes.fits(ratchet));
-        assertTrue(QrCodes.fits(classic));
-        assertArrayEquals(ratchet, QrCodes.messageWire(scan(QrCodes.encodeMessage(ratchet))));
-        assertArrayEquals(classic, QrCodes.messageWire(scan(QrCodes.encodeMessage(classic))));
-
-        final byte[] tooLong = Ratchet.encrypt(Ratchet.startAsInitiator(ANA, "ana",
-                BETO.mPublicKey, "beto", 1), text(QrCodes.MAX_PLAINTEXT_BYTES + 1), 1);
-        assertFalse(QrCodes.fits(tooLong));
+    /** Reads the loop like a camera would: out of order, some codes twice. */
+    private static byte[] readLoop(final List<BitMatrix> codes) {
+        final List<BitMatrix> seen = new ArrayList<>(codes);
+        seen.addAll(codes.subList(0, Math.min(2, codes.size())));
+        Collections.shuffle(seen, new Random(7));
+        final QrCodes.Assembler assembler = new QrCodes.Assembler();
+        byte[] wire = null;
+        for (final BitMatrix code : seen) {
+            final byte[] done = assembler.add(scan(code));
+            if (done != null) {
+                assertNull("only one complete message", wire);
+                wire = done;
+            }
+        }
+        return wire;
     }
 
     @Test
-    public void armoredTextIsAlsoAccepted() throws Exception {
+    public void messagesRoundTripAsLoopsOfSmallCodes() throws Exception {
+        for (final byte[] wire : new byte[][] {
+                ratchetMessage("oi"),
+                ratchetMessage(text(QrCodes.MAX_PLAINTEXT_BYTES)),
+                CifraCrypto.seal(text(QrCodes.MAX_PLAINTEXT_BYTES), BETO.mPublicKey, ANA) }) {
+            assertTrue(QrCodes.fits(wire));
+            final List<BitMatrix> codes = QrCodes.encodeMessage(wire);
+            assertTrue(codes.size() <= QrCodes.MAX_PARTS);
+            for (final BitMatrix code : codes) {
+                // Small codes survive a camera slightly out of focus; all the same size.
+                assertTrue(version(code) <= 6);
+                assertEquals(version(codes.get(0)), version(code));
+            }
+            assertArrayEquals(wire, readLoop(codes));
+        }
+    }
+
+    @Test
+    public void longerMessagesDoNotFit() {
+        assertFalse(QrCodes.fits(ratchetMessage(text(QrCodes.MAX_PLAINTEXT_BYTES + 1))));
+    }
+
+    @Test
+    public void anotherMessageStartsOver() {
+        final List<BitMatrix> first = QrCodes.encodeMessage(ratchetMessage("first"));
+        final byte[] second = ratchetMessage("second");
+        final List<BitMatrix> codes = QrCodes.encodeMessage(second);
+        final QrCodes.Assembler assembler = new QrCodes.Assembler();
+        for (int i = 0; i < first.size() - 1; i++) {
+            assertNull(assembler.add(scan(first.get(i))));
+        }
+        byte[] wire = null;
+        for (final BitMatrix code : codes) {
+            wire = assembler.add(scan(code));
+        }
+        assertArrayEquals(second, wire);
+    }
+
+    @Test
+    public void damagedPartIsRejected() {
+        final byte[] wire = ratchetMessage("hello");
+        final byte[][] parts = QrCodes.split(wire);
+        final QrCodes.Assembler assembler = new QrCodes.Assembler();
+        final byte[] damaged = parts[1].clone();
+        damaged[QrCodes.PART_HEADER + 3] ^= 1;
+        assertNull(assembler.add(new QrCodes.Content(damaged, null)));
+        for (int i = 0; i < parts.length; i++) {
+            if (i != 1) {
+                assertNull(assembler.add(new QrCodes.Content(parts[i], null)));
+            }
+        }
+        // Complete, but the check failed: the loop has to be read again, and then it works.
+        for (final byte[] part : parts) {
+            final byte[] done = assembler.add(new QrCodes.Content(part, null));
+            if (done != null) {
+                assertArrayEquals(wire, done);
+                return;
+            }
+        }
+        throw new AssertionError("the message was not read again");
+    }
+
+    @Test
+    public void singleCodesAreStillRead() throws Exception {
         final byte[] wire = CifraCrypto.seal("oi", BETO.mPublicKey, ANA);
-        final QrCodes.Content content = scan(QrCodes.encodeText(CifraCrypto.armor(wire)));
-        assertArrayEquals(wire, QrCodes.messageWire(content));
+        // The wire format in one code, as the first version showed it.
+        final QrCodes.Content binary = scan(QrCodes.encodeText(
+                new String(wire, StandardCharsets.ISO_8859_1)));
+        assertArrayEquals(wire, QrCodes.messageWire(binary));
+        // The armored text, as another app would show it.
+        assertArrayEquals(wire, QrCodes.messageWire(scan(QrCodes.encodeText(
+                CifraCrypto.armor(wire)))));
+        assertFalse(QrCodes.isPart(binary));
     }
 
     @Test
@@ -116,6 +179,8 @@ public class QrCodesTest {
         assertNotNull(content);
         assertNull(QrCodes.messageWire(content));
         assertNull(QrCodes.publicKey(content));
+        assertFalse(QrCodes.isPart(content));
+        assertNull(new QrCodes.Assembler().add(content));
         assertNull(QrCodes.messageWire(null));
     }
 }

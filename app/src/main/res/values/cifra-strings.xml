@@ -185,7 +185,7 @@
     <string name="cifra_qr_show_clipboard_detail">For the cold phone to read</string>
     <string name="cifra_qr_show_preview">Show as a QR code</string>
     <string name="cifra_qr_show_preview_detail">For the phone with internet to read and send. Then the draft is erased, as when inserting.</string>
-    <string name="cifra_qr_too_big">Too long for a QR code: up to <xliff:g id="LIMIT" example="764">%d</xliff:g> letters, and accented letters count as two.</string>
+    <string name="cifra_qr_too_big">Too long for QR codes: up to <xliff:g id="LIMIT" example="2044">%d</xliff:g> letters, and accented letters count as two.</string>
     <string name="cifra_qr_result_title">Encrypted message from the QR code</string>
     <string name="cifra_qr_result_info_cold">Read it here if it is for you, or insert it in the app to send it.</string>
     <string name="cifra_qr_result_info_hot">Insert it in the app to send it. This phone has no keys to read it.</string>
@@ -201,7 +201,8 @@
     <string name="cifra_qr_camera_error">Could not open the camera.</string>
     <string name="cifra_qr_online_warning">This phone holds keys and is not in airplane mode. A cold phone should always stay offline: airplane mode on, Wi-Fi and Bluetooth off.</string>
     <string name="cifra_qr_show_title">Encrypted message</string>
-    <string name="cifra_qr_show_hint">Read it with Cifra on the other phone. This code holds only encrypted text.</string>
+    <string name="cifra_qr_show_hint">Point Cifra on the other phone at these codes until it has read every part. They hold only encrypted text.</string>
+    <string name="cifra_qr_parts">Read <xliff:g id="RECEIVED" example="2">%1$d</xliff:g> of <xliff:g id="TOTAL" example="4">%2$d</xliff:g> parts. Keep pointing at the codes.</string>
     <string name="cifra_qr_image_description">QR code of the encrypted message</string>
     <string name="cifra_qr_key_description">QR code of the public key</string>
     <string name="cifra_qr_key_hint">To add you as a contact, the other person can read this code with Cifra.</string>
@@ -212,8 +213,12 @@
     <string name="cifra_qr_switch_summary_on">Reads and shows encrypted messages between this phone and a cold phone. The camera is only used while a code is being read.</string>
     <string name="cifra_cold_howto_title">How to use a cold phone</string>
     <string name="cifra_cold_howto_summary">A phone that never goes online holds the keys; the one with internet only carries encrypted text.</string>
-    <string name="cifra_cold_howto_text">The cold phone holds your identities and contacts and never goes online. The phone with internet keeps no keys: it only carries encrypted text.\n\nTo send: on the cold phone, open the writing area, tap the lock, write and encrypt, then tap \"Show as a QR code\". On the phone with internet, tap the QR button on the keyboard, read the code and insert the message in the chat.\n\nTo read: on the phone with internet, copy the encrypted message, tap the QR button and show it as a QR code. On the cold phone, open the writing area, tap the QR button and read the code. The message only appears on the cold phone.\n\nNever type a secret on the phone with internet. Keep the cold phone in airplane mode, with Wi-Fi and Bluetooth off, and turn on the QR code button on the phone with internet; in the writing area of the cold phone it is always there. A QR code holds up to <xliff:g id="LIMIT" example="764">%d</xliff:g> letters.</string>
+    <string name="cifra_cold_howto_text">The cold phone holds your identities and contacts and never goes online. The phone with internet keeps no keys: it only carries encrypted text.\n\nTo send: on the cold phone, open the writing area, tap the lock, write and encrypt, then tap \"Show as a QR code\". On the phone with internet, tap the QR button on the keyboard, read the code and insert the message in the chat.\n\nTo read: on the phone with internet, copy the encrypted message, tap the QR button and show it as a QR code. On the cold phone, open the writing area, tap the QR button and read the code. The message only appears on the cold phone.\n\nNever type a secret on the phone with internet. Keep the cold phone in airplane mode, with Wi-Fi and Bluetooth off, and turn on the QR code button on the phone with internet; in the writing area of the cold phone it is always there. A message goes as a loop of small codes and can have up to <xliff:g id="LIMIT" example="2044">%d</xliff:g> letters.</string>
     <string name="cifra_cold_write_title">Writing area</string>
     <string name="cifra_cold_write_summary">A text field to open the keyboard on the cold phone. Nothing typed here is kept.</string>
+    <string name="cifra_keyboard_not_current">The keyboard in use is not Cifra. So that nothing you write goes through another keyboard, this field only works with Cifra.</string>
+    <string name="cifra_keyboard_not_enabled">Cifra Keyboard is not turned on in the Android settings. Turn it on, then choose it as the keyboard in use.</string>
+    <string name="cifra_keyboard_switch">Switch keyboard</string>
+    <string name="cifra_keyboard_open_settings">Open settings</string>
     <string name="cifra_cold_write_hint">Tap the lock on the keyboard to write in secure mode.</string>
 </resources>
