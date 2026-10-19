@@ -657,10 +657,22 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
      * Called when secure mode starts or ends, as the shift state now follows another text.
      */
     public void onSecureInputChanged() {
-        if (mKeyboardSwitcher.getMainKeyboardView() != null) {
+        final MainKeyboardView mainKeyboardView = mKeyboardSwitcher.getMainKeyboardView();
+        if (mainKeyboardView != null) {
+            final SettingsValues settingsValues = mSettings.getCurrent();
+            mainKeyboardView.setKeyPreviewPopupEnabled(isKeyPreviewAllowed(settingsValues),
+                    settingsValues.mKeyPreviewPopupDismissDelay);
             mKeyboardSwitcher.requestUpdatingShiftState(getCurrentAutoCapsState(),
                     getCurrentRecapitalizeState());
         }
+    }
+
+    /**
+     * The enlarged key shown while typing would let anyone nearby read a secret over the user's
+     * shoulder, so secure mode never shows it, whatever the setting.
+     */
+    public boolean isKeyPreviewAllowed(final SettingsValues settingsValues) {
+        return settingsValues.mKeyPreviewPopupOn && !isCapturingSecureInput();
     }
 
     /**

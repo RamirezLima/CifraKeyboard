@@ -21,6 +21,7 @@ import com.google.zxing.BinaryBitmap;
 import com.google.zxing.DecodeHintType;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.LuminanceSource;
+import com.google.zxing.PlanarYUVLuminanceSource;
 import com.google.zxing.ReaderException;
 import com.google.zxing.Result;
 import com.google.zxing.ResultMetadataType;
@@ -71,6 +72,9 @@ public final class QrCodes {
     public static final int MAX_PLAINTEXT_BYTES = 8 * CifraCrypto.PADDING_BLOCK - 4;
     /** Blank modules around the code, as the QR specification asks. */
     static final int QUIET_ZONE = 4;
+    /** Pixels per module a camera may see; every part must be found at all of them. */
+    private static final int[] CHECK_SCALES = { 2, 3, 4, 5, 6, 8 };
+    private static final int NUM_MASKS = 8;
     private static final byte[] PART_MAGIC = { 'C', 'Q', 1 };
 
     /** What a QR code carried. */
@@ -101,12 +105,54 @@ public final class QrCodes {
     public static List<BitMatrix> encodeMessage(final byte[] wire) {
         final List<BitMatrix> codes = new ArrayList<>();
         for (final byte[] part : split(wire)) {
-            // Without a character set hint the bytes go in byte mode as ISO-8859-1, which maps
-            // each byte to one character, and no ECI header takes room.
-            codes.add(encode(new String(part, StandardCharsets.ISO_8859_1),
-                    ErrorCorrectionLevel.L));
+            codes.add(encodeReadable(part));
         }
         return codes;
+    }
+
+    /**
+     * ZXing's detector misses about 1 in 100 codes even when drawn perfectly: random data can
+     * look like the corner squares. The data is fine, and another of the 8 masks draws it
+     * differently, so each part is checked with the reader the other phone uses, at several
+     * sizes, and redrawn with another mask when it is not found.
+     */
+    static BitMatrix encodeReadable(final byte[] part) {
+        // Without a character set hint the bytes go in byte mode as ISO-8859-1, which maps each
+        // byte to one character, and no ECI header takes room.
+        final String contents = new String(part, StandardCharsets.ISO_8859_1);
+        BitMatrix first = null;
+        for (int mask = -1; mask < NUM_MASKS; mask++) {
+            // -1: the mask the encoder picks by itself.
+            final BitMatrix code = encode(contents, ErrorCorrectionLevel.L, mask);
+            if (first == null) {
+                first = code;
+            }
+            if (readableAtEveryScale(code, part)) {
+                return code;
+            }
+        }
+        return first;
+    }
+
+    static boolean readableAtEveryScale(final BitMatrix code, final byte[] expected) {
+        for (final int scale : CHECK_SCALES) {
+            final Content content = decode(render(code, scale), false);
+            if (content == null || !Arrays.equals(expected, content.mBytes)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static LuminanceSource render(final BitMatrix code, final int scale) {
+        final int size = code.getWidth() * scale;
+        final byte[] luminance = new byte[size * size];
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                luminance[y * size + x] = code.get(x / scale, y / scale) ? 0 : (byte) 255;
+            }
+        }
+        return new PlanarYUVLuminanceSource(luminance, size, size, 0, 0, size, size, false);
     }
 
     static byte[][] split(final byte[] wire) {
@@ -234,13 +280,17 @@ public final class QrCodes {
 
     /** Encodes a short text, such as a public key. */
     public static BitMatrix encodeText(final String text) {
-        return encode(text, ErrorCorrectionLevel.M);
+        return encode(text, ErrorCorrectionLevel.M, -1);
     }
 
-    private static BitMatrix encode(final String contents, final ErrorCorrectionLevel level) {
+    private static BitMatrix encode(final String contents, final ErrorCorrectionLevel level,
+            final int mask) {
         final Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
         hints.put(EncodeHintType.ERROR_CORRECTION, level);
         hints.put(EncodeHintType.MARGIN, QUIET_ZONE);
+        if (mask >= 0) {
+            hints.put(EncodeHintType.QR_MASK_PATTERN, mask);
+        }
         try {
             return new QRCodeWriter().encode(contents, BarcodeFormat.QR_CODE, 0, 0, hints);
         } catch (WriterException e) {

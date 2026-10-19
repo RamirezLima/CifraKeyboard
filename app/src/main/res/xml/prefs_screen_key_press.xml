@@ -36,6 +36,7 @@
     <SwitchPreference
         android:key="popup_on"
         android:title="@string/popup_on_keypress"
+        android:summary="@string/cifra_popup_summary"
         android:defaultValue="@bool/config_default_key_preview_popup"
         android:persistent="true" />
     <rkr.simplekeyboard.inputmethod.latin.settings.SeekBarDialogPreference

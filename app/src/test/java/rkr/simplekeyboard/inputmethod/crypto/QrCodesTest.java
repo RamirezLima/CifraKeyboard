@@ -108,6 +108,26 @@ public class QrCodesTest {
     }
 
     @Test
+    public void everyPartIsFoundAtEverySize() {
+        // Random data sometimes looks like the corner squares and hides a code from the
+        // detector; with about 1 in 100 parts affected, 150 messages would surely hit it.
+        final Random random = new Random(2026);
+        for (int i = 0; i < 150; i++) {
+            final byte[] wire = new byte[343 + random.nextInt(1700)];
+            random.nextBytes(wire);
+            wire[0] = 'C';
+            wire[1] = 'F';
+            wire[2] = 2;
+            final byte[][] parts = QrCodes.split(wire);
+            final List<BitMatrix> codes = QrCodes.encodeMessage(wire);
+            for (int p = 0; p < parts.length; p++) {
+                assertTrue("message " + i + ", part " + p,
+                        QrCodes.readableAtEveryScale(codes.get(p), parts[p]));
+            }
+        }
+    }
+
+    @Test
     public void longerMessagesDoNotFit() {
         assertFalse(QrCodes.fits(ratchetMessage(text(QrCodes.MAX_PLAINTEXT_BYTES + 1))));
     }

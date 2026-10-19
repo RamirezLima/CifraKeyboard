@@ -151,7 +151,7 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
         final Keyboard newKeyboard = mKeyboardLayoutSet.getKeyboard(keyboardId);
         keyboardView.setKeyboard(newKeyboard);
         keyboardView.setKeyPreviewPopupEnabled(
-                currentSettingsValues.mKeyPreviewPopupOn,
+                mLatinIME.isKeyPreviewAllowed(currentSettingsValues),
                 currentSettingsValues.mKeyPreviewPopupDismissDelay);
         final boolean subtypeChanged = (oldKeyboard == null)
                 || !newKeyboard.mId.mSubtype.equals(oldKeyboard.mId.mSubtype);

@@ -42,8 +42,6 @@ import rkr.simplekeyboard.inputmethod.latin.utils.FragmentUtils;
 public class SettingsActivity extends PreferenceActivity {
     private static final String DEFAULT_FRAGMENT = SettingsFragment.class.getName();
     private static final String TAG = SettingsActivity.class.getSimpleName();
-    /** Opening the app offers to switch to Cifra once, not every time the window gets focus. */
-    private boolean mOfferKeyboardSwitch;
 
     @Override
     protected void onStart() {
@@ -82,13 +80,9 @@ public class SettingsActivity extends PreferenceActivity {
     @Override
     public void onWindowFocusChanged(final boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        // The system list of keyboards only opens for the app whose window has the focus.
-        if (hasFocus && mOfferKeyboardSwitch) {
-            mOfferKeyboardSwitch = false;
+        if (hasFocus) {
             try {
-                if (KeyboardCheck.state(this) == KeyboardCheck.State.NOT_CURRENT) {
-                    KeyboardCheck.showPicker(this);
-                }
+                KeyboardCheck.offerSwitch(this);
             } catch (Exception e) {
                 Log.e(TAG, "Exception in check if input method is in use", e);
             }
@@ -98,7 +92,7 @@ public class SettingsActivity extends PreferenceActivity {
     @Override
     protected void onCreate(final Bundle savedState) {
         super.onCreate(savedState);
-        mOfferKeyboardSwitch = savedState == null;
+        KeyboardCheck.trackVisits(this);
         // Key and contact screens must not appear in screenshots or the recents preview.
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
         // First launch (and after system updates): find out what the secure hardware can do.

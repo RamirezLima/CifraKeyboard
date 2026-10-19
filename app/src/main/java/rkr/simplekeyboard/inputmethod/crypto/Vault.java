@@ -131,6 +131,12 @@ public final class Vault {
         return best;
     }
 
+    /** When the conversation with a contact last moved, for ordering; 0 if there is none. */
+    public long lastActivity(final String identityId, final String contactId) {
+        final Ratchet.Session session = activeSession(identityId, contactId);
+        return session == null ? 0 : rank(session);
+    }
+
     private static long rank(final Ratchet.Session session) {
         return Math.max(session.mLastReceivedAt, session.mCreatedAt);
     }

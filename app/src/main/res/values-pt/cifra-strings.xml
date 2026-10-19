@@ -116,8 +116,7 @@
     <string name="cifra_reuse_warning">Não reutilize as palavras de uma carteira de criptomoedas.</string>
 
     <!-- Teclado -->
-    <string name="cifra_bar_idle">Toque no cadeado para escrever em sigilo</string>
-    <string name="cifra_bar_to">Para: <xliff:g id="NAME" example="Maria">%s</xliff:g></string>
+    <string name="cifra_bar_idle">Toque no cadeado para o modo seguro</string>
     <string name="cifra_bar_to_ratchet">Para: <xliff:g id="NAME" example="Maria">%s</xliff:g> · catraca</string>
     <string name="cifra_bar_to_classic">Para: <xliff:g id="NAME" example="Maria">%s</xliff:g> · clássico</string>
     <string name="cifra_mode_title">Como começar a conversa com <xliff:g id="NAME" example="Maria">%s</xliff:g>?</string>
@@ -155,20 +154,18 @@
     <string name="cifra_need_identity">Crie sua identidade primeiro, a partir das suas palavras BIP39.</string>
     <string name="cifra_need_contact">Adicione primeiro a chave pública de alguém.</string>
     <string name="cifra_encrypting">Cifrando…</string>
-    <string name="cifra_decrypting">Descriptografando…</string>
+    <string name="cifra_decrypting">Decifrando…</string>
     <string name="cifra_preview_title">Cifrada para <xliff:g id="NAME" example="Maria">%s</xliff:g></string>
     <string name="cifra_preview_info">Só <xliff:g id="NAME" example="Maria">%s</xliff:g> consegue ler. O app vai receber apenas o texto abaixo.</string>
     <string name="cifra_edit">Editar</string>
     <string name="cifra_insert">Inserir no app</string>
-    <string name="cifra_pick_identity">Descriptografar com qual chave privada?</string>
-    <string name="cifra_try_all">Tentar todas</string>
     <string name="cifra_from">De <xliff:g id="NAME" example="Maria">%s</xliff:g></string>
     <string name="cifra_from_unverified">De <xliff:g id="NAME" example="Maria">%s</xliff:g> (chave não verificada)</string>
     <string name="cifra_from_self">De você (<xliff:g id="NAME" example="Trabalho">%s</xliff:g>)</string>
     <string name="cifra_read_info">Para <xliff:g id="NAME" example="Trabalho">%s</xliff:g>. Exibida só aqui: o app nunca vê este texto.</string>
     <string name="cifra_close">Fechar</string>
     <string name="cifra_reply">Responder</string>
-    <string name="cifra_decrypt_failed">Não foi possível descriptografar. A mensagem é para outra chave, ou quem enviou não está nos seus contatos.</string>
+    <string name="cifra_decrypt_failed">Não foi possível decifrar. A mensagem é para outra chave, ou quem enviou não está nos seus contatos.</string>
     <string name="cifra_clipboard_invalid">A mensagem copiada está danificada ou incompleta.</string>
     <string name="cifra_empty_message">Digite uma mensagem primeiro</string>
     <string name="cifra_message_too_long">A mensagem é longa demais</string>
@@ -179,14 +176,14 @@
     <string name="cifra_encrypted_message">Mensagem cifrada</string>
     <string name="cifra_qr_content_description">QR codes</string>
     <string name="cifra_qr_menu">QR codes</string>
-    <string name="cifra_qr_scan">Ler um QR code</string>
+    <string name="cifra_qr_scan">Escanear um QR code</string>
     <string name="cifra_qr_scan_detail">Mensagem cifrada mostrada por outro celular</string>
     <string name="cifra_qr_show_clipboard">Mostrar a mensagem copiada como QR code</string>
-    <string name="cifra_qr_show_clipboard_detail">Para o celular frio ler</string>
+    <string name="cifra_qr_show_clipboard_detail">Para o celular frio escanear</string>
     <string name="cifra_qr_show_preview">Mostrar como QR code</string>
-    <string name="cifra_qr_show_preview_detail">Para o celular com internet ler e enviar. Depois o rascunho é apagado, como ao inserir.</string>
+    <string name="cifra_qr_show_preview_detail">Para o celular com internet escanear e enviar. Depois o rascunho é apagado, como ao inserir.</string>
     <string name="cifra_qr_too_big">Grande demais para os QR codes: até <xliff:g id="LIMIT" example="2044">%d</xliff:g> letras, e letras com acento contam como duas.</string>
-    <string name="cifra_qr_result_title">Mensagem cifrada lida do QR code</string>
+    <string name="cifra_qr_result_title">Mensagem cifrada escaneada</string>
     <string name="cifra_qr_result_info_cold">Leia aqui se ela for para você, ou insira no app para enviar.</string>
     <string name="cifra_qr_result_info_hot">Insira no app para enviar. Este celular não tem chaves para lê-la.</string>
     <string name="cifra_qr_read_here">Ler aqui</string>
@@ -194,31 +191,39 @@
     <string name="cifra_preview_info_qr">Só <xliff:g id="NAME" example="Maria">%s</xliff:g> consegue ler. Mostre o QR code para o celular com internet, que envia.</string>
     <string name="cifra_qr_not_message">Este QR code não é uma mensagem do Cifra.</string>
     <string name="cifra_qr_not_key">Este QR code não é uma chave pública do Cifra.</string>
-    <string name="cifra_qr_scan_title">Ler um QR code</string>
-    <string name="cifra_qr_scan_key_title">Ler uma chave pública</string>
+    <string name="cifra_qr_scan_title">Escanear um QR code</string>
+    <string name="cifra_qr_scan_key_title">Escanear uma chave pública</string>
     <string name="cifra_qr_scan_hint">Aponte para o QR code na tela do outro celular.</string>
-    <string name="cifra_qr_no_camera">O Cifra precisa da câmera para ler QR codes. Libere nas configurações do Android, em Apps, Cifra Keyboard, Permissões.</string>
+    <string name="cifra_qr_no_camera">O Cifra precisa da câmera para escanear QR codes. Libere nas configurações do Android, em Apps, Cifra Keyboard, Permissões.</string>
     <string name="cifra_qr_camera_error">Não foi possível abrir a câmera.</string>
     <string name="cifra_qr_online_warning">Este celular guarda chaves e não está em modo avião. Um celular frio deve ficar sempre offline: modo avião ligado, Wi-Fi e Bluetooth desligados.</string>
+    <string name="cifra_qr_preparing">Preparando os códigos…</string>
     <string name="cifra_qr_show_title">Mensagem cifrada</string>
-    <string name="cifra_qr_show_hint">Aponte o Cifra do outro celular para estes códigos até ele ler todas as partes. Eles só têm texto cifrado.</string>
-    <string name="cifra_qr_parts">Lidas <xliff:g id="RECEIVED" example="2">%1$d</xliff:g> de <xliff:g id="TOTAL" example="4">%2$d</xliff:g> partes. Continue apontando para os códigos.</string>
+    <string name="cifra_qr_show_hint">Escaneie estes códigos com o Cifra do outro celular até ele ter todas as partes. Eles só têm texto cifrado.</string>
+    <string name="cifra_qr_parts">Escaneadas <xliff:g id="RECEIVED" example="2">%1$d</xliff:g> de <xliff:g id="TOTAL" example="4">%2$d</xliff:g> partes. Continue apontando para os códigos.</string>
     <string name="cifra_qr_image_description">QR code da mensagem cifrada</string>
     <string name="cifra_qr_key_description">QR code da chave pública</string>
-    <string name="cifra_qr_key_hint">Para adicionar você como contato, a outra pessoa pode ler este código com o Cifra.</string>
-    <string name="cifra_scan_qr">Ler QR code</string>
+    <string name="cifra_qr_key_hint">Para adicionar você como contato, a outra pessoa pode escanear este código com o Cifra.</string>
+    <string name="cifra_scan_qr">Escanear QR code</string>
     <string name="cifra_cold">Celular frio (QR codes)</string>
     <string name="cifra_qr_switch_title">Botão de QR code no teclado</string>
     <string name="cifra_qr_switch_summary_off">Para usar o Cifra com um celular frio, que nunca fica online e guarda as chaves.</string>
-    <string name="cifra_qr_switch_summary_on">Lê e mostra mensagens cifradas entre este celular e um celular frio. A câmera só é usada enquanto um código é lido.</string>
+    <string name="cifra_qr_switch_summary_on">Escaneia e mostra mensagens cifradas entre este celular e um celular frio. A câmera só é usada enquanto você escaneia um código.</string>
     <string name="cifra_cold_howto_title">Como usar um celular frio</string>
     <string name="cifra_cold_howto_summary">Um celular que nunca fica online guarda as chaves; o que tem internet só leva texto cifrado.</string>
-    <string name="cifra_cold_howto_text">O celular frio guarda suas identidades e contatos e nunca fica online. O celular com internet não guarda chaves: só leva texto cifrado.\n\nPara enviar: no celular frio, abra a área de escrita, toque no cadeado, escreva e cifre, e então toque em \"Mostrar como QR code\". No celular com internet, toque no botão de QR do teclado, leia o código e insira a mensagem na conversa.\n\nPara ler: no celular com internet, copie a mensagem cifrada, toque no botão de QR e mostre-a como QR code. No celular frio, abra a área de escrita, toque no botão de QR e leia o código. A mensagem só aparece no celular frio.\n\nNunca digite um segredo no celular com internet. Deixe o celular frio em modo avião, com Wi-Fi e Bluetooth desligados, e ligue o botão de QR code no celular com internet; na área de escrita do celular frio ele sempre aparece. A mensagem vai como uma sequência de códigos pequenos e pode ter até <xliff:g id="LIMIT" example="2044">%d</xliff:g> letras.</string>
+    <string name="cifra_cold_howto_text">O celular frio guarda suas identidades e contatos e nunca fica online. O celular com internet não guarda chaves: só leva texto cifrado.\n\nPara enviar: no celular frio, abra a área de escrita, toque no cadeado, escreva e cifre, e então toque em \"Mostrar como QR code\". No celular com internet, toque no botão de QR do teclado, escaneie o código e insira a mensagem na conversa.\n\nPara ler: no celular com internet, copie a mensagem cifrada, toque no botão de QR e mostre-a como QR code. No celular frio, abra a área de escrita, toque no botão de QR e escaneie o código. A mensagem só aparece no celular frio.\n\nNunca digite um segredo no celular com internet. Deixe o celular frio em modo avião, com Wi-Fi e Bluetooth desligados, e ligue o botão de QR code no celular com internet; na área de escrita do celular frio ele sempre aparece. A mensagem vai como uma sequência de códigos pequenos e pode ter até <xliff:g id="LIMIT" example="2044">%d</xliff:g> letras.</string>
     <string name="cifra_cold_write_title">Área de escrita</string>
     <string name="cifra_cold_write_summary">Um campo de texto para abrir o teclado no celular frio. Nada digitado aqui é guardado.</string>
     <string name="cifra_keyboard_not_current">O teclado em uso não é o Cifra. Para que nada do que você escreve passe por outro teclado, este campo só funciona com o Cifra.</string>
     <string name="cifra_keyboard_not_enabled">O Cifra Keyboard não está ativado nas configurações do Android. Ative-o e depois escolha-o como teclado em uso.</string>
     <string name="cifra_keyboard_switch">Trocar teclado</string>
     <string name="cifra_keyboard_open_settings">Abrir configurações</string>
+    <string name="cifra_use_classic_confirm">Usar o modo clássico</string>
+    <string name="cifra_recipient_ratchet">conversa na catraca</string>
+    <string name="cifra_recipient_unverified">chave não verificada</string>
+    <string name="cifra_inserted">Inserida. Toque em enviar no app.</string>
+    <string name="cifra_draft_discarded_timeout">O rascunho foi descartado depois de 5 minutos com o teclado fechado.</string>
+    <string name="cifra_draft_discarded_screen_off">O rascunho foi descartado quando a tela apagou.</string>
+    <string name="cifra_popup_summary">Nunca aparece no modo seguro, para ninguém ler por cima do seu ombro.</string>
     <string name="cifra_cold_write_hint">Toque no cadeado do teclado para escrever no modo seguro.</string>
 </resources>

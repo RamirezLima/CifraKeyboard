@@ -56,8 +56,6 @@ public final class ColdWriteActivity extends Activity {
     private View mKeyboardBanner;
     private TextView mKeyboardMessage;
     private Button mKeyboardAction;
-    /** Opening the screen offers to switch to Cifra once, not every time it gets the focus. */
-    private boolean mOfferKeyboardSwitch;
     /** Cifra became the keyboard while the system list still had the focus. */
     private boolean mShowKeyboardOnFocus;
     private final ContentObserver mKeyboardObserver =
@@ -111,7 +109,7 @@ public final class ColdWriteActivity extends Activity {
         mKeyboardBanner = findViewById(R.id.cifra_cold_keyboard_banner);
         mKeyboardMessage = findViewById(R.id.cifra_cold_keyboard_message);
         mKeyboardAction = findViewById(R.id.cifra_cold_keyboard_action);
-        mOfferKeyboardSwitch = savedInstanceState == null;
+        KeyboardCheck.trackVisits(this);
         // Before the window gets the focus, so another keyboard never opens on the field.
         refreshKeyboardState();
     }
@@ -144,11 +142,7 @@ public final class ColdWriteActivity extends Activity {
         if (mShowKeyboardOnFocus && state == KeyboardCheck.State.CURRENT) {
             showKeyboard();
         }
-        // The system list of keyboards only opens for the app whose window has the focus.
-        if (mOfferKeyboardSwitch && state == KeyboardCheck.State.NOT_CURRENT) {
-            mOfferKeyboardSwitch = false;
-            KeyboardCheck.showPicker(this);
-        }
+        KeyboardCheck.offerSwitch(this);
     }
 
     private KeyboardCheck.State refreshKeyboardState() {

@@ -154,13 +154,21 @@ Propriedades e limites:
 2. **Cifrar:** gera a mensagem, mostra o texto cifrado e só insere no app após "Inserir no app".
    O modo seguro continua ativo para a próxima mensagem. Para sair, toque de novo no cadeado.
 3. **Ler (aparece quando há mensagem cifrada na área de transferência):** no formato clássico,
-   pergunta qual chave privada usar (se houver mais de uma); na catraca, a conversa já sabe.
+   o teclado tenta as identidades uma a uma, só no aparelho; na catraca, a conversa já sabe.
    Mostra o texto decifrado só no teclado, sem opção de copiar, junto com o modo e os avisos
    (primeira mensagem, releitura, conversa reiniciada). "Responder" abre o modo seguro já com o
-   remetente como destinatário.
+   remetente como destinatário. Depois de lida (e com a chave queimada), a mesma mensagem deixa
+   de aparecer no botão: o teclado guarda na memória só o SHA-256 do texto cifrado, até a tela
+   apagar.
 4. Ao esconder o teclado, a mensagem decifrada é apagada da tela na hora. Um rascunho é
-   descartado após 5 minutos com o teclado escondido.
-5. Serviços de acessibilidade são um canal comum de spyware. Por padrão, rascunho, texto
+   descartado após 5 minutos com o teclado escondido, ou quando a tela apaga; na volta, o
+   teclado avisa que isso aconteceu, sem mostrar nada do conteúdo.
+5. **Balão das teclas:** no modo seguro, a tecla ampliada que aparece ao tocar fica sempre
+   desligada, seja qual for a configuração: ela deixaria alguém ao lado ler o segredo letra por
+   letra. A captura de tela já é bloqueada; quem olha por cima do ombro, não.
+6. **Trocar para o modo clássico** numa conversa pede confirmação, com o mesmo aviso de risco de
+   quando a conversa começa no modo clássico.
+7. Serviços de acessibilidade são um canal comum de spyware. Por padrão, rascunho, texto
    decifrado e nomes de contatos no teclado ficam ocultos de **todos** os serviços de
    acessibilidade, inclusive o TalkBack: o texto é retirado das informações entregues a eles e
    os eventos de mudança de texto são descartados. Marcar as views como "não importantes" ou
@@ -183,8 +191,9 @@ cifrar, para uma mensagem que não cabe num QR code não gastar uma chave da cat
   segredo: digitá-lo no celular online o exporia a quem controlar esse aparelho, e um QR code com
   texto aberto pode ser lido por qualquer câmera por perto. Por isso só passam por QR o texto
   cifrado e as chaves públicas.
-- **Teclado em uso:** ao abrir, o app confere se o Cifra é o teclado em uso e, se não for, abre a
-  lista do sistema para trocar. Na área de escrita, o campo fica bloqueado enquanto outro teclado
+- **Teclado em uso:** cada vez que o app é aberto (inclusive voltando do segundo plano), ele
+  confere se o Cifra é o teclado em uso e, se não for, abre a lista do sistema para trocar, uma
+  vez por visita. Na área de escrita, o campo fica bloqueado enquanto outro teclado
   estiver em uso, porque tudo o que se digita passa primeiro pelo teclado em uso.
 - **Enviar:** no celular frio, a "Área de escrita" é só um campo de texto para abrir o teclado.
   No modo seguro, depois de cifrar, "Mostrar QR code" mostra a mensagem no próprio teclado, que
@@ -201,7 +210,11 @@ cifrar, para uma mensagem que não cabe num QR code não gastar uma chave da cat
   numa sequência de QR codes pequenos (até versão 6, 41 × 41 módulos, correção de erro L) que se
   alternam a cada 250 ms. Cada parte leva "CQ", a versão, os 4 primeiros bytes do SHA-256 da
   mensagem, o número da parte, o total de partes e o tamanho da mensagem; o leitor junta as
-  partes em qualquer ordem e confere o SHA-256 no fim. Um único código denso caberia, mas a
+  partes em qualquer ordem e confere o SHA-256 no fim. Antes de mostrar cada
+  parte, o Cifra confere com o mesmo leitor, em vários tamanhos, se ela é encontrada na imagem:
+  dados aleatórios às vezes imitam os quadrados de canto do QR e escondem o código do detector
+  (cerca de 1 parte em 100). Nesse caso a parte é redesenhada com outra das 8 máscaras do QR,
+  que muda o desenho e não os dados. Um único código denso caberia, mas a
   câmera apontada para outra tela costuma estar um pouco fora de foco, e a ZXing perde códigos
   densos muito antes dos pequenos: numa simulação com borrão e pouco contraste, a mensagem
   mais curta (343 bytes) em código único falhou em mais da metade dos quadros, e em quatro

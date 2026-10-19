@@ -16,11 +16,14 @@
 
 package rkr.simplekeyboard.inputmethod.crypto;
 
+import android.app.Activity;
+import android.app.Application;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.provider.Settings;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -39,8 +42,83 @@ public final class KeyboardCheck {
         CURRENT,
     }
 
+    /** The system learns that a window has the focus a moment after the window does. */
+    private static final long PICKER_DELAY_MILLIS = 300;
+
+    /** Main thread only: offered once per visit, not on every focus or every screen. */
+    private static boolean sOffered;
+    /** This app's started screens; back to zero means the user left the app. */
+    private static int sStartedScreens;
+    private static boolean sTracking;
+
     private KeyboardCheck() {
         // This utility class is not publicly instantiable.
+    }
+
+    /**
+     * Counts this app's started screens, so one visit can be told from the next. Call from
+     * onCreate of the screens that offer the switch, before they start.
+     */
+    public static void trackVisits(final Activity activity) {
+        if (sTracking) {
+            return;
+        }
+        sTracking = true;
+        activity.getApplication().registerActivityLifecycleCallbacks(
+                new Application.ActivityLifecycleCallbacks() {
+                    @Override
+                    public void onActivityStarted(final Activity started) {
+                        sStartedScreens++;
+                    }
+
+                    @Override
+                    public void onActivityStopped(final Activity stopped) {
+                        if (sStartedScreens > 0) {
+                            sStartedScreens--;
+                        }
+                        if (sStartedScreens == 0 && !stopped.isChangingConfigurations()) {
+                            // Left the app: the next visit offers the switch again.
+                            sOffered = false;
+                        }
+                    }
+
+                    @Override
+                    public void onActivityCreated(final Activity created, final Bundle state) {}
+
+                    @Override
+                    public void onActivityResumed(final Activity resumed) {}
+
+                    @Override
+                    public void onActivityPaused(final Activity paused) {}
+
+                    @Override
+                    public void onActivitySaveInstanceState(final Activity saved,
+                            final Bundle state) {}
+
+                    @Override
+                    public void onActivityDestroyed(final Activity destroyed) {}
+                });
+    }
+
+    /**
+     * Opens the system list of keyboards when Cifra is turned on but another keyboard is in use,
+     * once per visit to the app. Call from onWindowFocusChanged(true).
+     */
+    public static void offerSwitch(final Activity activity) {
+        if (sOffered || state(activity) != State.NOT_CURRENT) {
+            return;
+        }
+        sOffered = true;
+        activity.getWindow().getDecorView().postDelayed(() -> {
+            if (activity.isFinishing() || !activity.hasWindowFocus()) {
+                // Something else took the focus: try again when this screen has it back.
+                sOffered = false;
+                return;
+            }
+            if (state(activity) == State.NOT_CURRENT) {
+                showPicker(activity);
+            }
+        }, PICKER_DELAY_MILLIS);
     }
 
     public static State state(final Context context) {
@@ -66,7 +144,9 @@ public final class KeyboardCheck {
     private static String currentPackage(final Context context, final InputMethodManager imm) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             final InputMethodInfo current = imm.getCurrentInputMethodInfo();
-            return current == null ? null : current.getPackageName();
+            if (current != null) {
+                return current.getPackageName();
+            }
         }
         final String id = Settings.Secure.getString(context.getContentResolver(),
                 Settings.Secure.DEFAULT_INPUT_METHOD);
